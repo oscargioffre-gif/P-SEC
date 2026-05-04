@@ -2,15 +2,28 @@ name: SEC Insider Scanner
 
 on:
   schedule:
-    # Ogni 5 minuti durante orari di mercato (US ET 9:30-16:00 = UTC 14:30-21:00)
-    # + qualche run extra prima/dopo per catchare pre/post market filings
-    - cron: '*/5 13-22 * * 1-5'
-    # Ogni 30 min nel resto del tempo (per catchare filings serali)
-    - cron: '*/30 0-12,23 * * *'
-  workflow_dispatch:  # permette esecuzione manuale dalla UI GitHub
+    # FUSO ITALIANO (CEST = UTC+2):
+    # 15:30-22:00 IT = mercato US aperto = 13:30-20:00 UTC
+    # 22:00-00:00 IT = post-close US     = 20:00-22:00 UTC
+    # 00:00-15:30 IT = night block       = 22:00-13:30 UTC
+    
+    # MERCATO US APERTO — cron ogni 2 min (lag medio ~1 min)
+    - cron: '*/2 13-19 * * 1-5'
+    
+    # POST-CLOSE US — cron ogni 5 min (filing batch serali)
+    - cron: '*/5 20-21 * * 1-5'
+    
+    # NIGHT BLOCK — cron ogni 30 min (poco traffico)
+    - cron: '*/30 22-23 * * 1-5'
+    - cron: '*/30 0-13 * * 1-5'
+    
+    # WEEKEND — cron ogni ora (filing rari)
+    - cron: '0 * * * 0,6'
+  
+  workflow_dispatch:  # esecuzione manuale dalla UI GitHub
 
 permissions:
-  contents: write   # serve per committare data.json
+  contents: write
 
 jobs:
   scan:
@@ -27,8 +40,7 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: |
-          pip install requests
+        run: pip install requests
       
       - name: Run fetcher
         env:
