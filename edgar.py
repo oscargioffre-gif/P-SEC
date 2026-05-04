@@ -1,88 +1,23 @@
 """
-edgar.py — v4.0 PROXY VIA CLOUDFLARE WORKER
+edgar.py — Libreria SEC EDGAR per fetcher GitHub Actions.
 
-Tutte le richieste verso www.sec.gov e data.sec.gov passano attraverso
-il Cloudflare Worker dell'utente per bypassare il ban IP di Streamlit Cloud.
-
-Worker: https://insider-scanner-proxy.oscar-gioffre.workers.dev/?url=<encoded_url>
+Architettura: il fetcher gira su GitHub Actions (IP Azure non bannato da SEC),
+quindi può fare richieste DIRETTE a www.sec.gov e data.sec.gov senza proxy.
 """
 
 import re
 import threading
 import time
 import logging
-from collections import deque, Counter
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from urllib.parse import quote
 from xml.etree import ElementTree as ET
 
 import requests
 
 logger = logging.getLogger(__name__)
-
-# ============================================================
-# PROXY CONFIG
-# ============================================================
-PROXY_BASE = "https://insider-scanner-proxy.oscar-gioffre.workers.dev/?url="
-
-# Domini che vanno proxati (gli altri restano diretti)
-PROXY_DOMAINS = {"www.sec.gov", "data.sec.gov"}
-
-
-def proxy_url(target_url: str) -> str:
-    """Wrappa un URL SEC dentro il proxy Cloudflare Worker."""
-    return f"{PROXY_BASE}{quote(target_url, safe='')}"
-
-
-def needs_proxy(url: str) -> bool:
-    """True se l'URL deve passare per il proxy."""
-    try:
-        host = url.split("//")[1].split("/")[0]
-        return host in PROXY_DOMAINS
-    except (IndexError, AttributeError):
-        return False
-
-
-# ============================================================
-# DEBUG STATS
-# ============================================================
-DEBUG_STATS = {
-    "doc_fetch_failed": 0,
-    "no_xml_in_index": 0,
-    "all_xml_attempts_failed": 0,
-    "parse_xml_failed": 0,
-    "parse_keyword_failed": 0,
-    "parse_regex_failed": 0,
-    "parse_html_failed": 0,
-    "parse_success": 0,
-    "http_403": 0,
-    "http_429": 0,
-    "http_other": 0,
-    "http_200": 0,
-    "request_exception": 0,
-}
-
-ERROR_REASONS = Counter()
-SAMPLE_FAILED_URLS = []
-ERROR_LOCK = threading.Lock()
-
-
-def reset_debug_stats():
-    for k in DEBUG_STATS:
-        DEBUG_STATS[k] = 0
-    with ERROR_LOCK:
-        ERROR_REASONS.clear()
-        SAMPLE_FAILED_URLS.clear()
-
-
-def _record_error(reason: str, url: str = ""):
-    with ERROR_LOCK:
-        ERROR_REASONS[reason] += 1
-        if url and len(SAMPLE_FAILED_URLS) < 5:
-            SAMPLE_FAILED_URLS.append(f"{reason}: {url[-80:]}")
-
 
 # ============================================================
 # SETTORI
@@ -98,7 +33,7 @@ for sector, sics in SIC_CODES.items():
 
 
 # ============================================================
-# PREFILTRO NOME
+# PREFILTRO NOME (riduce SIC lookup ~80%)
 # ============================================================
 COMPANY_NAME_KEYWORDS = [
     "BIO", "BIOTECH", "BIOTECHNOLOGY", "BIOSCIENCE", "BIOSCIENCES",
@@ -153,18 +88,15 @@ def is_candidate_company_name(name: str) -> bool:
 # ============================================================
 # CONFIG HTTP
 # ============================================================
-USER_AGENT_TEMPLATE = "OS Insider Scanner ({email})"
+USER_AGENT = "OS Quant Research contact@osquant.com"
 SEC_BASE = "https://www.sec.gov"
 SEC_DATA_BASE = "https://data.sec.gov"
 
-# Rate limit: ora più aggressivo perché Cloudflare assorbe e l'IP del worker non è bannato
-# Manteniamo comunque un cap ragionevole per non saturare il Worker
 HOST_RATE_LIMITS = {
-    "www.sec.gov": 10.0,           # via proxy: aumentato
-    "data.sec.gov": 5.0,           # via proxy: aumentato
-    "insider-scanner-proxy.oscar-gioffre.workers.dev": 15.0,
+    "www.sec.gov": 5.0,
+    "data.sec.gov": 3.0,
 }
-DEFAULT_RATE = 5.0
+DEFAULT_RATE = 3.0
 
 SCHEMA = {
     "shares_min": 0.01, "shares_max": 1e9,
@@ -183,199 +115,84 @@ class HostRateLimiter:
         self._locks: dict[str, threading.Lock] = {}
         self._global_lock = threading.Lock()
     
-    def _get_lock(self, host: str) -> threading.Lock:
+    def _get_lock(self, host):
         with self._global_lock:
             if host not in self._locks:
                 self._locks[host] = threading.Lock()
             return self._locks[host]
     
-    def wait(self, host: str):
+    def wait(self, host):
         rate = HOST_RATE_LIMITS.get(host, DEFAULT_RATE)
         min_interval = 1.0 / rate
-        
         lock = self._get_lock(host)
         with lock:
             if host not in self._buckets:
                 self._buckets[host] = deque(maxlen=int(rate) + 2)
-            
             bucket = self._buckets[host]
             now = time.monotonic()
-            
             while bucket and bucket[0] < now - 1.0:
                 bucket.popleft()
-            
             if len(bucket) >= int(rate):
                 wait_until = bucket[0] + 1.0
                 sleep_time = wait_until - now
                 if sleep_time > 0:
                     time.sleep(sleep_time)
                 bucket.popleft()
-            
             if bucket:
                 last = bucket[-1]
                 gap = time.monotonic() - last
                 if gap < min_interval:
                     time.sleep(min_interval - gap)
-            
             bucket.append(time.monotonic())
 
 
 _rate_limiter = HostRateLimiter()
 
 
-# ============================================================
-# HTTP SESSION
-# ============================================================
-
-def make_session(email: str) -> requests.Session:
+def make_session() -> requests.Session:
     s = requests.Session()
     s.headers.update({
-        "User-Agent": USER_AGENT_TEMPLATE.format(email=email),
+        "User-Agent": USER_AGENT,
         "Accept-Encoding": "gzip, deflate",
         "Accept": "*/*",
     })
     return s
 
 
-def safe_get(session: requests.Session, url: str, timeout: int = 20, retries: int = 3) -> Optional[requests.Response]:
-    """
-    GET con proxy automatico per domini SEC.
-    Se l'URL è di www.sec.gov o data.sec.gov → passa per Cloudflare Worker.
-    Altrimenti → richiesta diretta.
-    """
-    # Determina URL effettivo (proxato o no) e host per rate limiting
-    if needs_proxy(url):
-        actual_url = proxy_url(url)
-        rate_host = "insider-scanner-proxy.oscar-gioffre.workers.dev"
-    else:
-        actual_url = url
-        try:
-            rate_host = url.split("//")[1].split("/")[0]
-        except (IndexError, AttributeError):
-            rate_host = "default"
-    
-    last_error = "unknown"
-    
+def safe_get(session, url, timeout=20, retries=3):
+    host = url.split("//")[1].split("/")[0]
     for attempt in range(retries + 1):
-        _rate_limiter.wait(rate_host)
+        _rate_limiter.wait(host)
         try:
-            r = session.get(actual_url, timeout=timeout)
-            
+            r = session.get(url, timeout=timeout)
             if r.status_code == 200:
-                DEBUG_STATS["http_200"] += 1
                 return r
-            
             if r.status_code == 429:
-                DEBUG_STATS["http_429"] += 1
-                last_error = "429"
                 wait = min(60, 5 * (2 ** attempt))
+                logger.warning(f"429: wait {wait}s")
                 time.sleep(wait)
                 continue
-            
-            if r.status_code == 403:
-                DEBUG_STATS["http_403"] += 1
-                _record_error("403_forbidden", url)
+            if r.status_code in (403, 404):
                 return None
-            
-            if r.status_code == 404:
-                _record_error("404_not_found", url)
-                return None
-            
-            DEBUG_STATS["http_other"] += 1
-            last_error = f"http_{r.status_code}"
-            _record_error(last_error, url)
-            return None
-            
-        except requests.exceptions.Timeout:
-            last_error = "timeout"
-            if attempt < retries:
-                time.sleep(2 + attempt)
-                continue
-        except requests.exceptions.ConnectionError as e:
-            last_error = f"conn_err:{type(e).__name__}"
-            if attempt < retries:
-                time.sleep(2 + attempt)
-                continue
         except requests.exceptions.RequestException as e:
-            last_error = f"req_err:{type(e).__name__}"
             if attempt < retries:
                 time.sleep(2 + attempt)
                 continue
-        except Exception as e:
-            last_error = f"unexpected:{type(e).__name__}:{str(e)[:50]}"
-            if attempt < retries:
-                time.sleep(2 + attempt)
-                continue
-    
-    DEBUG_STATS["request_exception"] += 1
-    _record_error(last_error, url)
+            logger.warning(f"Request fail: {url[-60:]} — {type(e).__name__}")
     return None
 
 
 # ============================================================
-# DATE
+# ATOM FEED (real-time)
 # ============================================================
 
-def get_target_dates(num_days: int = 2) -> list[dict]:
-    out = []
-    d = datetime.now(timezone.utc)
-    offset = 0
-    while len(out) < num_days and offset < 7:
-        candidate = d - timedelta(days=offset)
-        if candidate.weekday() < 5:
-            out.append({
-                "year": candidate.year,
-                "qtr": (candidate.month - 1) // 3 + 1,
-                "yyyymmdd": candidate.strftime("%Y%m%d"),
-            })
-        offset += 1
-    return out
-
-
-# ============================================================
-# FETCH FILE LISTS
-# ============================================================
-
-def fetch_full_index(session: requests.Session, target_date: dict) -> list[dict]:
-    url = (f"{SEC_BASE}/Archives/edgar/daily-index/"
-           f"{target_date['year']}/QTR{target_date['qtr']}/form.{target_date['yyyymmdd']}.idx")
-    r = safe_get(session, url, timeout=30)
-    if not r:
-        return []
-    
-    out = []
-    for line in r.text.splitlines():
-        if not re.match(r"^4\s+[A-Za-z0-9]", line):
-            continue
-        form_type = line[0:12].strip()
-        if form_type != "4":
-            continue
-        company = line[12:74].strip()
-        cik = line[74:86].strip()
-        date_filed = line[86:98].strip()
-        filename = line[98:].strip()
-        if not filename:
-            continue
-        m = re.search(r"(\d{10}-\d{2}-\d{6})", filename)
-        if not m:
-            continue
-        out.append({
-            "accession": m.group(1),
-            "company": company,
-            "cik": cik,
-            "date_filed": date_filed,
-            "index_url": f"{SEC_BASE}/" + filename.lstrip("/"),
-        })
-    return out
-
-
-def fetch_atom_feed(session: requests.Session, count: int = 100) -> list[dict]:
+def fetch_atom_feed(session, count=100):
+    """Fetch ATOM feed with last N Form 4. ~30s lag from filing."""
     url = (f"{SEC_BASE}/cgi-bin/browse-edgar?action=getcurrent&type=4"
            f"&company=&dateb=&owner=include&count={count}&output=atom")
     r = safe_get(session, url)
     if not r:
         return []
-    
     out = []
     try:
         text = re.sub(r'\sxmlns="[^"]+"', '', r.text, count=1)
@@ -387,12 +204,10 @@ def fetch_atom_feed(session: requests.Session, count: int = 100) -> list[dict]:
             href = link_el.get("href") if link_el is not None else ""
             updated = updated_el.text if updated_el is not None else ""
             title = title_el.text if title_el is not None else ""
-            
             accession = None
             if "/Archives/edgar/data/" in href:
                 parts = href.rstrip("/").split("/")
                 accession = parts[-1].replace("-index.htm", "").replace("-index.html", "")
-            
             if accession:
                 out.append({
                     "accession": accession,
@@ -402,11 +217,10 @@ def fetch_atom_feed(session: requests.Session, count: int = 100) -> list[dict]:
                 })
     except ET.ParseError as e:
         logger.error(f"ATOM parse error: {e}")
-    
     return out
 
 
-def fetch_filer_sic(session: requests.Session, cik: str) -> Optional[str]:
+def fetch_filer_sic(session, cik):
     cik_padded = str(cik).zfill(10)
     url = f"{SEC_DATA_BASE}/submissions/CIK{cik_padded}.json"
     r = safe_get(session, url, timeout=15)
@@ -420,20 +234,12 @@ def fetch_filer_sic(session: requests.Session, cik: str) -> Optional[str]:
         return None
 
 
-# ============================================================
-# FORM 4 DOCUMENT
-# ============================================================
-
-def fetch_form4_document(session: requests.Session, index_url: str) -> Optional[dict]:
+def fetch_form4_document(session, index_url):
     r = safe_get(session, index_url)
     if not r:
-        DEBUG_STATS["doc_fetch_failed"] += 1
         return None
-    
     html = r.text
-    xml_urls = []
-    html_urls = []
-    
+    xml_urls, html_urls = [], []
     for match in re.finditer(r'href="([^"]+)"', html, re.IGNORECASE):
         path = match.group(1)
         low = path.lower()
@@ -442,12 +248,10 @@ def fetch_form4_document(session: requests.Session, index_url: str) -> Optional[
         full = f"{SEC_BASE}{path}" if path.startswith("/") else path
         if low.endswith(".xml"):
             xml_urls.append(full)
-        elif (low.endswith(".htm") or low.endswith(".html")):
+        elif low.endswith(".htm") or low.endswith(".html"):
             if not (low.endswith("-index.htm") or low.endswith("-index.html")):
                 html_urls.append(full)
-    
     if not xml_urls and not html_urls:
-        DEBUG_STATS["no_xml_in_index"] += 1
         return None
     
     def xml_priority(url):
@@ -458,7 +262,6 @@ def fetch_form4_document(session: requests.Session, index_url: str) -> Optional[
         if "/xsl" in low: score += 10
         if "ownership" in low: score -= 3
         return score
-    
     xml_urls.sort(key=xml_priority)
     
     for url in xml_urls[:5]:
@@ -478,21 +281,20 @@ def fetch_form4_document(session: requests.Session, index_url: str) -> Optional[
         if "table i" in low or "non-derivative" in low or "transaction code" in low:
             return {"type": "html", "text": text, "url": url}
     
-    DEBUG_STATS["all_xml_attempts_failed"] += 1
     return None
 
 
 # ============================================================
-# PARSER (invariati)
+# PARSER
 # ============================================================
 
-def _strip_namespace(root: ET.Element) -> None:
+def _strip_namespace(root):
     for el in root.iter():
         if "}" in el.tag:
             el.tag = el.tag.split("}", 1)[1]
 
 
-def parse_xml_standard(xml_text: str) -> Optional[dict]:
+def parse_xml_standard(xml_text):
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
@@ -553,11 +355,10 @@ def parse_xml_standard(xml_text: str) -> Optional[dict]:
         if shares == 0:
             continue
         result["purchases"].append({"date": date, "shares": shares, "price": price, "total": shares * price})
-    
     return result
 
 
-def parse_xml_keyword(xml_text: str) -> Optional[dict]:
+def parse_xml_keyword(xml_text):
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
@@ -627,7 +428,7 @@ def parse_xml_keyword(xml_text: str) -> Optional[dict]:
     return result
 
 
-def parse_xml_regex(xml_text: str) -> Optional[dict]:
+def parse_xml_regex(xml_text):
     cik_m = re.search(r"<[^>]*issuerCik[^>]*>(\d+)<", xml_text, re.IGNORECASE)
     company_m = re.search(r"<[^>]*issuerName[^>]*>([^<]+)<", xml_text, re.IGNORECASE)
     ticker_m = re.search(r"<[^>]*issuerTradingSymbol[^>]*>([^<]+)<", xml_text, re.IGNORECASE)
@@ -643,7 +444,6 @@ def parse_xml_regex(xml_text: str) -> Optional[dict]:
         "insider_title": "N/D (regex)",
         "purchases": [], "strategy": "regex",
     }
-    
     block_re = re.compile(
         r"<[^>]*nonDerivativeTransaction[^>]*>(.*?)</[^>]*nonDerivativeTransaction>",
         re.IGNORECASE | re.DOTALL
@@ -673,7 +473,7 @@ def parse_xml_regex(xml_text: str) -> Optional[dict]:
     return result
 
 
-def parse_html_table(html_text: str) -> Optional[dict]:
+def parse_html_table(html_text):
     tables = re.findall(r"<table[^>]*>(.*?)</table>", html_text, re.IGNORECASE | re.DOTALL)
     target_table = None
     for t in tables:
@@ -715,7 +515,6 @@ def parse_html_table(html_text: str) -> Optional[dict]:
         "insider_title": "N/D (html)",
         "purchases": [], "strategy": "html",
     }
-    
     for row in rows[1:]:
         cells = cells_of(row)
         if len(cells) < 3:
@@ -741,7 +540,7 @@ def parse_html_table(html_text: str) -> Optional[dict]:
     return result
 
 
-def validate_purchases(purchases: list[dict]) -> list[dict]:
+def validate_purchases(purchases):
     valid = []
     now = datetime.now(timezone.utc)
     for p in purchases:
@@ -763,56 +562,34 @@ def validate_purchases(purchases: list[dict]) -> list[dict]:
     return valid
 
 
-def parse_form4_resilient(doc: dict) -> Optional[dict]:
+def parse_form4_resilient(doc):
     if doc["type"] == "xml":
-        try:
-            r = parse_xml_standard(doc["text"])
-            if r is not None:
-                r["purchases"] = validate_purchases(r["purchases"])
-                DEBUG_STATS["parse_success"] += 1
-                return r
-        except Exception:
-            pass
-        DEBUG_STATS["parse_xml_failed"] += 1
-        try:
-            r = parse_xml_keyword(doc["text"])
-            if r is not None:
-                r["purchases"] = validate_purchases(r["purchases"])
-                DEBUG_STATS["parse_success"] += 1
-                return r
-        except Exception:
-            pass
-        DEBUG_STATS["parse_keyword_failed"] += 1
-        try:
-            r = parse_xml_regex(doc["text"])
-            if r is not None:
-                r["purchases"] = validate_purchases(r["purchases"])
-                DEBUG_STATS["parse_success"] += 1
-                return r
-        except Exception:
-            pass
-        DEBUG_STATS["parse_regex_failed"] += 1
-        return None
-    elif doc["type"] == "html":
+        for fn in (parse_xml_standard, parse_xml_keyword, parse_xml_regex):
+            try:
+                r = fn(doc["text"])
+                if r is not None:
+                    r["purchases"] = validate_purchases(r["purchases"])
+                    return r
+            except Exception:
+                continue
+    else:
         try:
             r = parse_html_table(doc["text"])
             if r is not None:
                 r["purchases"] = validate_purchases(r["purchases"])
-                DEBUG_STATS["parse_success"] += 1
                 return r
         except Exception:
             pass
-        DEBUG_STATS["parse_html_failed"] += 1
-        return None
+    return None
 
 
-def detect_clusters(matches: list[dict], min_insiders: int = 3) -> None:
+def detect_clusters(matches, min_insiders=3):
     groups = {}
     for m in matches:
-        key = (m["ticker"], m["date"])
+        key = (m["ticker"], m["tx_date"])
         groups.setdefault(key, set()).add(m["insider_name"])
     for m in matches:
-        key = (m["ticker"], m["date"])
+        key = (m["ticker"], m["tx_date"])
         if len(groups.get(key, set())) >= min_insiders:
             m["is_cluster"] = True
             m["cluster_size"] = len(groups[key])
@@ -821,15 +598,13 @@ def detect_clusters(matches: list[dict], min_insiders: int = 3) -> None:
             m["cluster_size"] = 0
 
 
-def parallel_map(fn, items, max_workers: int = 8, progress_callback=None):
+def parallel_map(fn, items, max_workers=5):
     results = []
     with ThreadPoolExecutor(max_workers=max_workers) as ex:
         futures = {ex.submit(fn, item): item for item in items}
-        for i, future in enumerate(as_completed(futures), 1):
+        for future in as_completed(futures):
             try:
                 results.append(future.result())
             except Exception:
                 results.append(None)
-            if progress_callback:
-                progress_callback(i, len(items))
     return results
