@@ -1,0 +1,50 @@
+name: SEC Insider Scanner
+
+on:
+  schedule:
+    # Ogni 5 minuti durante orari di mercato (US ET 9:30-16:00 = UTC 14:30-21:00)
+    # + qualche run extra prima/dopo per catchare pre/post market filings
+    - cron: '*/5 13-22 * * 1-5'
+    # Ogni 30 min nel resto del tempo (per catchare filings serali)
+    - cron: '*/30 0-12,23 * * *'
+  workflow_dispatch:  # permette esecuzione manuale dalla UI GitHub
+
+permissions:
+  contents: write   # serve per committare data.json
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests
+      
+      - name: Run fetcher
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SOGLIA_USD: '10000'
+        run: python fetcher.py
+      
+      - name: Commit and push data.json
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add data.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🤖 update data.json [skip ci]"
+            git push
+          fi
