@@ -1,7 +1,7 @@
 """
-OS Insider Scanner — Viewer Streamlit (v5.1)
-Aggiunge colonne timestamp Filing in US ET, Italia (CEST), e età relativa.
-Default sort: più recente in cima.
+OS Insider Scanner — Viewer Streamlit (v5.2)
+Aggiunge heartbeat panel con stats ultimo run.
+Permette di distinguere "fetcher fermo" da "fetcher OK ma 0 purchases".
 """
 
 import json
@@ -36,16 +36,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ============================================================
-# TIMEZONE HELPERS
-# ============================================================
-
 def parse_utc_timestamp(s):
-    """Parse ISO timestamp con o senza timezone, ritorna datetime UTC-aware."""
     if not s:
         return None
     try:
-        # Try ISO format
         if s.endswith("Z"):
             s = s.replace("Z", "+00:00")
         dt = datetime.fromisoformat(s)
@@ -57,11 +51,8 @@ def parse_utc_timestamp(s):
 
 
 def fmt_us_et(utc_dt):
-    """Formatta UTC datetime in US Eastern Time (EDT/EST auto)."""
     if utc_dt is None:
         return "—"
-    # Maggio = EDT (UTC-4). In inverno (Nov-Mar) sarebbe EST (UTC-5).
-    # Approssimazione: se mese è 11,12,1,2 → EST, altrimenti EDT
     is_dst = utc_dt.month not in (11, 12, 1, 2, 3)
     offset = -4 if is_dst else -5
     et = utc_dt + timedelta(hours=offset)
@@ -70,7 +61,6 @@ def fmt_us_et(utc_dt):
 
 
 def fmt_italy(utc_dt):
-    """Formatta UTC datetime in ora italiana (CEST/CET)."""
     if utc_dt is None:
         return "—"
     is_dst = utc_dt.month not in (11, 12, 1, 2)
@@ -80,7 +70,6 @@ def fmt_italy(utc_dt):
 
 
 def fmt_age(utc_dt):
-    """Età relativa: '2m', '1h 15m', '3h ago', '2d'."""
     if utc_dt is None:
         return "—"
     now = datetime.now(timezone.utc)
@@ -103,27 +92,16 @@ def fmt_age(utc_dt):
     return f"{days}d"
 
 
-# ============================================================
-# DATA LOADING
-# ============================================================
-
 @st.cache_data(ttl=60)
 def load_data():
     if not DATA_FILE.exists():
-        return None, None
+        return None
     try:
         with open(DATA_FILE) as f:
-            data = json.load(f)
-        purchases = data.get("purchases", [])
-        last_update = data.get("last_update")
-        return purchases, last_update
+            return json.load(f)
     except (json.JSONDecodeError, ValueError):
-        return None, None
+        return None
 
-
-# ============================================================
-# UI
-# ============================================================
 
 st.title("📊 OS Insider Scanner")
 st.caption("Form 4 P+A · Biotech + Semiconductors · GitHub Actions cron")
@@ -149,8 +127,8 @@ with st.sidebar:
     st.caption("**Semiconductors**: 3674, 3670, 3571, 3572, 3576, 3577")
     
     st.divider()
-    st.subheader("🕐 Fusi orari mostrati")
-    st.caption("• **US ET** (Eastern): ora del mercato US")
+    st.subheader("🕐 Fusi orari")
+    st.caption("• **US ET**: ora del mercato US")
     st.caption("• **IT**: ora italiana (CEST)")
     st.caption("• **Età**: tempo dal filing")
     
@@ -159,17 +137,22 @@ with st.sidebar:
         st.cache_data.clear()
         st.rerun()
 
-purchases, last_update = load_data()
+data = load_data()
 
-if purchases is None:
-    st.warning("⚠️ data.json non ancora generato. Aspetta che il fetcher GitHub Actions completi il primo run.")
+if data is None:
+    st.warning("⚠️ data.json non disponibile.")
     st.stop()
+
+purchases = data.get("purchases", [])
+last_update = data.get("last_update")
+last_run_stats = data.get("last_run_stats", {})
+run_count = data.get("run_count", 0)
 
 # Filtro 24h
 cutoff_utc = datetime.now(timezone.utc) - timedelta(hours=24)
 recent = [p for p in purchases if parse_utc_timestamp(p.get("detected_at", "")) and parse_utc_timestamp(p.get("detected_at", "")) >= cutoff_utc]
 
-# Applica filtri user
+# Filtri user
 filtered = []
 cLevel_keywords = ["ceo", "cfo", "coo", "president", "chief"]
 for p in recent:
@@ -192,29 +175,57 @@ if sort_mode == "Più recenti (filing)":
     filtered.sort(key=filing_sort_key, reverse=True)
 elif sort_mode == "Per ticker":
     filtered.sort(key=lambda x: (x["ticker"], -x["total"]))
-else:  # Valore decrescente
+else:
     filtered.sort(key=lambda x: -x["total"])
 
-# Header status — ULTIMO FILING + ULTIMO REFRESH FETCHER
-if filtered:
-    most_recent_dt = filing_sort_key(filtered[0])
-    age_str = fmt_age(most_recent_dt)
-    st.success(f"🔥 Ultimo filing: **{filtered[0]['ticker']}** — {age_str} ago · {fmt_us_et(most_recent_dt)} · {fmt_italy(most_recent_dt)} IT")
+
+# ============================================================
+# HEARTBEAT BANNER
+# ============================================================
 
 if last_update:
     lu = parse_utc_timestamp(last_update)
     if lu:
         age_min = (datetime.now(timezone.utc) - lu).total_seconds() / 60
+        feed_count = last_run_stats.get("feed_count", 0)
+        new_purchases_in_run = last_run_stats.get("new_purchases_in_target", 0)
+        
         if age_min < 5:
-            st.success(f"✅ Fetcher aggiornato {age_min:.0f} min fa · {len(filtered)} filing visibili nei filtri")
-        elif age_min < 15:
-            st.info(f"ℹ️ Fetcher aggiornato {age_min:.0f} min fa")
-        elif age_min < 60:
-            st.warning(f"⚠️ Fetcher fermo da {age_min:.0f} min — possibile problema cron")
+            st.success(
+                f"✅ Fetcher attivo · Ultimo run {age_min:.0f} min fa "
+                f"(run #{run_count}) · "
+                f"ATOM: {feed_count} entries · Nuovi P+A in settori: {new_purchases_in_run}"
+            )
+        elif age_min < 35:
+            st.info(
+                f"ℹ️ Fetcher OK · Ultimo run {int(age_min)} min fa "
+                f"(cron notturno = 30 min) · ATOM: {feed_count} entries"
+            )
+        elif age_min < 90:
+            st.warning(
+                f"⚠️ Fetcher in ritardo: {int(age_min)} min dall'ultimo run. "
+                f"Verifica GitHub Actions."
+            )
         else:
-            st.error(f"🚨 Fetcher fermo da {int(age_min)} min!")
+            st.error(
+                f"🚨 Fetcher FERMO da {int(age_min)} min! "
+                f"Vai su GitHub Actions e lancia 'Run workflow' manualmente."
+            )
 
-# Metrics
+# Most recent filing (se ci sono dati)
+if filtered:
+    most_recent_dt = filing_sort_key(filtered[0])
+    age_str = fmt_age(most_recent_dt)
+    st.markdown(
+        f"🔥 **Ultimo filing P+A nei settori target**: `{filtered[0]['ticker']}` — "
+        f"{age_str} fa · {fmt_us_et(most_recent_dt)} · {fmt_italy(most_recent_dt)} IT"
+    )
+
+
+# ============================================================
+# METRICS
+# ============================================================
+
 c1, c2, c3, c4 = st.columns(4)
 with c1: st.metric("Filing 24h", len(filtered))
 with c2:
@@ -230,12 +241,29 @@ with c4:
 
 st.divider()
 
+
+# ============================================================
+# TABLE
+# ============================================================
+
 if not filtered:
     st.info("📭 Nessun filing che corrisponde ai filtri attuali.")
+    
+    # Diagnostico: spiega perché non ci sono dati
+    if len(purchases) == 0:
+        st.caption(
+            "💡 Il database è vuoto. Significa che dall'inizio del monitoraggio "
+            "non sono ancora arrivati Form 4 P+A nei settori Biotech/Semi. "
+            "Tipicamente arrivano 2-15 al giorno durante orario mercato US (15:30-22:00 IT)."
+        )
+    else:
+        st.caption(
+            f"💡 Ci sono {len(purchases)} filing in storage totale. "
+            "Prova ad abbassare la soglia, allargare i settori, o disattivare 'Solo C-level'."
+        )
 else:
     df = pd.DataFrame(filtered)
     
-    # Format columns
     df["💰 Tot"] = df["total"].apply(
         lambda x: f"${x/1e6:.2f}M" if x >= 1e6 else (f"${x/1e3:.1f}k" if x >= 1e3 else f"${x:,.0f}")
     )
@@ -246,11 +274,15 @@ else:
         axis=1
     )
     
-    # Timestamp columns
-    df["_filing_dt"] = df["filing_datetime_utc"].apply(parse_utc_timestamp) if "filing_datetime_utc" in df.columns else None
-    df["🕐 US ET"] = df["_filing_dt"].apply(fmt_us_et) if "_filing_dt" in df.columns else "—"
-    df["🇮🇹 IT"] = df["_filing_dt"].apply(fmt_italy) if "_filing_dt" in df.columns else "—"
-    df["⏱ Età"] = df["_filing_dt"].apply(fmt_age) if "_filing_dt" in df.columns else "—"
+    if "filing_datetime_utc" in df.columns:
+        df["_filing_dt"] = df["filing_datetime_utc"].apply(parse_utc_timestamp)
+        df["⏱ Età"] = df["_filing_dt"].apply(fmt_age)
+        df["🕐 US ET"] = df["_filing_dt"].apply(fmt_us_et)
+        df["🇮🇹 IT"] = df["_filing_dt"].apply(fmt_italy)
+    else:
+        df["⏱ Età"] = "—"
+        df["🕐 US ET"] = "—"
+        df["🇮🇹 IT"] = "—"
     
     st.dataframe(
         df[["⏱ Età", "🕐 US ET", "🇮🇹 IT", "🏢 Ticker", "company", "insider_name", "insider_title",
@@ -267,14 +299,9 @@ else:
         use_container_width=True,
     )
     
-    # CSV export with timestamps in clean format
     df_export = df.copy()
     if "_filing_dt" in df_export.columns:
-        df_export["filing_us_et"] = df_export["_filing_dt"].apply(fmt_us_et)
-        df_export["filing_italy"] = df_export["_filing_dt"].apply(fmt_italy)
-        df_export["age"] = df_export["_filing_dt"].apply(fmt_age)
         df_export = df_export.drop(columns=["_filing_dt"])
-    
     csv = df_export.to_csv(index=False)
     st.download_button(
         "📥 Esporta CSV",
@@ -283,9 +310,38 @@ else:
         "text/csv",
     )
 
+
+# ============================================================
+# DIAGNOSTIC EXPANDER
+# ============================================================
+
+with st.expander("🔍 Diagnostica & stats ultimo run"):
+    if last_run_stats:
+        st.write("**Ultimo run del fetcher:**")
+        ts = last_run_stats.get("timestamp")
+        if ts:
+            ts_dt = parse_utc_timestamp(ts)
+            if ts_dt:
+                st.write(f"- Timestamp: {fmt_italy(ts_dt)} IT ({fmt_us_et(ts_dt)})")
+        st.write(f"- ATOM feed entries ricevuti: **{last_run_stats.get('feed_count', 0)}**")
+        st.write(f"- Filing nuovi (non già processati): **{last_run_stats.get('new_filings', 0)}**")
+        st.write(f"- Candidati post-prefiltro nome: **{last_run_stats.get('candidates', 0)}**")
+        st.write(f"- Form 4 con purchases (P+A) parsati: **{last_run_stats.get('valid_with_purchases', 0)}**")
+        st.write(f"- Nuovi P+A in settori target: **{last_run_stats.get('new_purchases_in_target', 0)}**")
+        st.write(f"- Alert Telegram inviati: **{last_run_stats.get('telegram_alerts_sent', 0)}**")
+    else:
+        st.write("Nessuna statistica disponibile (probabilmente fetcher non ancora aggiornato a v3).")
+    
+    st.divider()
+    st.write("**Storage globale:**")
+    st.write(f"- Run totali fetcher: **{run_count}**")
+    st.write(f"- Purchases in storage: **{len(purchases)}**")
+    st.write(f"- Accession già processate: **{len(data.get('processed_accessions', []))}**")
+    st.write(f"- CIK in cache SIC: **{len(data.get('sic_cache', {}))}**")
+    st.write(f"- Alert Telegram totali inviati: **{len(data.get('alerted_keys', []))}**")
+
+
 st.divider()
 st.caption(
-    f"💾 Storage: {len(purchases):,} purchases tot · "
-    f"Refresh data.json: ogni 60s · "
-    f"Fetcher cron: 2 min (mercato) - 30 min (notte) · v5.1"
+    f"💾 v5.2 · Refresh data.json: 60s · Cron: 2 min (mercato US) - 30 min (notte IT)"
 )
