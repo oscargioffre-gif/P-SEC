@@ -2,29 +2,16 @@ name: SEC Insider Scanner
 
 on:
   schedule:
-    # FUSO ITALIANO (CEST = UTC+2):
-    # 15:30-22:00 IT = mercato US aperto = 13:30-20:00 UTC
-    # 22:00-00:00 IT = post-close US     = 20:00-22:00 UTC
-    
-    # MERCATO US APERTO — cron ogni 2 min (lag medio ~1 min)
     - cron: '*/2 13-19 * * 1-5'
-    
-    # POST-CLOSE US — cron ogni 5 min
     - cron: '*/5 20-21 * * 1-5'
-    
-    # NIGHT BLOCK — cron ogni 30 min
     - cron: '*/30 22-23 * * 1-5'
     - cron: '*/30 0-13 * * 1-5'
-    
-    # WEEKEND — cron ogni ora
     - cron: '0 * * * 0,6'
-  
   workflow_dispatch:
 
 permissions:
   contents: write
 
-# Previene esecuzioni concorrenti del workflow
 concurrency:
   group: scan-workflow
   cancel-in-progress: false
@@ -33,7 +20,6 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,31 +41,24 @@ jobs:
           SOGLIA_USD: '10000'
         run: python fetcher.py
       
-      - name: Commit and push data.json (with retry on race)
+      - name: Commit and push data.json
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           
-          # Verifica se ci sono modifiche a data.json
           if git diff --quiet data.json; then
-            echo "No changes to data.json, skipping commit"
+            echo "No changes to data.json, skip"
             exit 0
           fi
           
-          # Stash le modifiche di data.json
           git stash push data.json -m "fetcher-data"
-          
-          # Pull rebase per integrare commit altrui (es. tuoi manual edits)
           git pull --rebase origin main
+          git stash pop || echo "stash pop note"
           
-          # Riapplica le modifiche di data.json
-          git stash pop || echo "stash pop returned non-zero (potrebbe essere normale)"
-          
-          # Commit + push con retry (max 3 tentativi)
           for attempt in 1 2 3; do
             git add data.json
             if git diff --staged --quiet; then
-              echo "No effective changes after rebase, exit"
+              echo "No effective changes after rebase"
               exit 0
             fi
             git commit -m "update data.json [skip ci]"
@@ -88,9 +67,9 @@ jobs:
               echo "Push successful on attempt $attempt"
               exit 0
             else
-              echo "Push failed attempt $attempt, pulling and retrying..."
+              echo "Push failed attempt $attempt, retrying..."
               git reset HEAD~1
-              git stash push data.json -m "fetcher-data-retry-$attempt"
+              git stash push data.json -m "fetcher-retry-$attempt" || true
               git pull --rebase origin main
               git stash pop || true
               sleep 2
