@@ -1,14 +1,7 @@
 """
-fetcher.py — Script eseguito da GitHub Actions ogni 5 minuti.
+fetcher.py — Script eseguito da GitHub Actions ogni 2-30 minuti.
 
-Pipeline:
-  1. fetch ATOM feed (ultimi 100 Form 4)
-  2. prefiltro nome biotech/semi
-  3. SIC lookup (con cache)
-  4. parse Form 4 P+A
-  5. cluster detection
-  6. salva in data.json (committato dal workflow)
-  7. invia Telegram alert solo per purchases NUOVI (non ancora visti)
+v2: salva filing_datetime_utc completo (timestamp ATOM <updated>)
 """
 
 import json
@@ -23,16 +16,12 @@ import requests
 import edgar
 
 
-# ============================================================
-# CONFIG
-# ============================================================
 DATA_FILE = Path("data.json")
 RETENTION_HOURS = 28
 SOGLIA_TELEGRAM = float(os.environ.get("SOGLIA_USD", "10000"))
 
 
 def load_state():
-    """Carica data.json o ritorna stato vuoto."""
     if DATA_FILE.exists():
         try:
             with open(DATA_FILE) as f:
@@ -41,20 +30,17 @@ def load_state():
             pass
     return {
         "purchases": [],
-        "sic_cache": {},          # cik → sic
-        "processed_accessions": [], # accession già processate
-        "alerted_keys": [],         # chiavi univoche già alertate
+        "sic_cache": {},
+        "processed_accessions": [],
+        "alerted_keys": [],
         "last_update": None,
     }
 
 
 def save_state(state):
-    """Salva data.json. Comprimo se troppo grande."""
-    # Purge old purchases
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=RETENTION_HOURS)).isoformat()
     state["purchases"] = [p for p in state["purchases"] if p.get("detected_at", "") >= cutoff]
     
-    # Limita processed_accessions a ultimi 5000 per evitare crescita infinita
     if len(state["processed_accessions"]) > 5000:
         state["processed_accessions"] = state["processed_accessions"][-5000:]
     if len(state["alerted_keys"]) > 5000:
@@ -67,12 +53,10 @@ def save_state(state):
 
 
 def send_telegram(text):
-    """Invia messaggio Telegram."""
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     if not bot_token or not chat_id:
         return False
-    
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     try:
         r = requests.post(url, json={
@@ -87,16 +71,29 @@ def send_telegram(text):
 
 
 def format_alert(p):
-    """Formatta alert Telegram."""
     cluster_tag = f" ⚡<b>CLUSTER {p['cluster_size']}</b>" if p.get("is_cluster") else ""
+    
+    # Mostra ora US ET nel Telegram alert
+    filing_us_str = ""
+    if p.get("filing_datetime_utc"):
+        try:
+            dt_utc = datetime.fromisoformat(p["filing_datetime_utc"].replace("Z", "+00:00"))
+            # US ET = UTC-4 (EDT) o UTC-5 (EST). Maggio = EDT.
+            dt_et = dt_utc - timedelta(hours=4)
+            filing_us_str = f"📅 Filed: {dt_et.strftime('%d %b %H:%M')} ET"
+        except (ValueError, AttributeError):
+            pass
+    
     lines = [
         f"🔔 <b>{p['ticker']}</b>{cluster_tag} — {p['sector']}",
         f"<i>{(p.get('company') or '')[:60]}</i>",
         "",
         f"👤 {p['insider_name']} ({p.get('insider_title', 'N/D')})",
         f"💰 {p['shares']:,.0f} sh @ ${p['price']:.2f} = <b>${p['total']:,.0f}</b>",
-        f"📅 Tx: {p['tx_date']}",
+        f"📆 Tx: {p['tx_date']}",
     ]
+    if filing_us_str:
+        lines.append(filing_us_str)
     if p.get("xml_url"):
         lines.append(f'🔗 <a href="{p["xml_url"]}">SEC filing</a>')
     return "\n".join(lines)
@@ -112,30 +109,25 @@ def main():
     
     session = edgar.make_session()
     
-    # 1. ATOM feed
     print("Fetching ATOM feed...")
     feed = edgar.fetch_atom_feed(session, count=100)
-    print(f"  → {len(feed)} entries")
+    print(f"  -> {len(feed)} entries")
     
     if not feed:
-        print("ATOM feed empty, possibly rate-limited. Saving state and exit.")
+        print("ATOM feed empty. Saving state and exit.")
         save_state(state)
         return 0
     
-    # 2. Skip già processati
     new_filings = [f for f in feed if f["accession"] not in processed]
-    print(f"  → {len(new_filings)} new (not yet processed)")
+    print(f"  -> {len(new_filings)} new (not yet processed)")
     
     if not new_filings:
-        print("Nothing new. Saving state and exit.")
         save_state(state)
         return 0
     
-    # 3. Prefiltro nome
     candidates = [f for f in new_filings if edgar.is_candidate_company_name(f.get("company", ""))]
-    print(f"  → {len(candidates)} candidates (after name prefilter)")
+    print(f"  -> {len(candidates)} candidates (after name prefilter)")
     
-    # Marca tutti come processati a prescindere
     for f in new_filings:
         processed.add(f["accession"])
     
@@ -144,8 +136,6 @@ def main():
         save_state(state)
         return 0
     
-    # 4. Parse documents (in parallelo) PRIMA del SIC lookup
-    # così parsiamo solo una volta e poi usiamo issuer_cik del parsed per SIC
     print(f"Parsing {len(candidates)} candidates...")
     
     def parse_task(filing):
@@ -159,23 +149,21 @@ def main():
     
     parse_results = edgar.parallel_map(parse_task, candidates, max_workers=4)
     valid_results = [r for r in parse_results if r is not None]
-    print(f"  → {len(valid_results)} with P+A purchases")
+    print(f"  -> {len(valid_results)} with P+A purchases")
     
     if not valid_results:
         state["processed_accessions"] = sorted(processed)
         save_state(state)
         return 0
     
-    # 5. SIC lookup solo per quelli con purchases
     ciks_needed = list(set(r["parsed"]["issuer_cik"] for r in valid_results if r["parsed"].get("issuer_cik")))
     ciks_to_fetch = [c for c in ciks_needed if c not in sic_cache]
     print(f"SIC lookup: {len(ciks_to_fetch)} new (cache hit: {len(ciks_needed) - len(ciks_to_fetch)})")
     
     for cik in ciks_to_fetch:
         sic = edgar.fetch_filer_sic(session, cik)
-        sic_cache[cik] = sic or ""  # store empty string for "unknown" to avoid retry
+        sic_cache[cik] = sic or ""
     
-    # 6. Costruisci match nei settori target
     new_purchases = []
     for r in valid_results:
         cik = r["parsed"]["issuer_cik"]
@@ -183,6 +171,10 @@ def main():
         if not sic or sic not in edgar.SIC_WHITELIST:
             continue
         sector = edgar.SIC_WHITELIST[sic]
+        
+        # Estrai filing datetime completo (non solo data)
+        filing_dt_utc = r["filing"].get("updated", "") or ""
+        filing_date_short = filing_dt_utc[:10] if filing_dt_utc else ""
         
         seen_in_filing = set()
         for tx in r["parsed"]["purchases"]:
@@ -198,7 +190,8 @@ def main():
                 "insider_name": r["parsed"]["insider_name"],
                 "insider_title": r["parsed"]["insider_title"],
                 "tx_date": tx["date"],
-                "filing_date": (r["filing"].get("updated", "") or "")[:10],
+                "filing_date": filing_date_short,
+                "filing_datetime_utc": filing_dt_utc,  # NUOVO: timestamp completo
                 "shares": tx["shares"],
                 "price": tx["price"],
                 "total": tx["total"],
@@ -209,13 +202,11 @@ def main():
                 "detected_at": datetime.now(timezone.utc).isoformat(),
             })
     
-    # 7. Cluster detection (sui purchases di OGGI in storico + nuovi)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     recent_all = [p for p in state["purchases"] if p.get("tx_date") in (today, yesterday)] + new_purchases
     edgar.detect_clusters(recent_all, min_insiders=3)
     
-    # Aggiorna i nuovi (cluster info copiato indietro)
     new_keys = set((p["accession"], p["insider_name"], p["tx_date"], p["shares"]) for p in new_purchases)
     for p in recent_all:
         k = (p["accession"], p["insider_name"], p["tx_date"], p["shares"])
@@ -226,7 +217,6 @@ def main():
                     np["cluster_size"] = p["cluster_size"]
                     break
     
-    # 8. Append nuovi al state (dedup su key univoca)
     existing_keys = set(
         (p["accession"], p["insider_name"], p.get("tx_date", ""), round(p.get("shares", 0)), round(p.get("price", 0), 4))
         for p in state["purchases"]
@@ -237,9 +227,8 @@ def main():
             state["purchases"].append(np)
             existing_keys.add(k)
     
-    print(f"  → {len(new_purchases)} new purchases in target sectors")
+    print(f"  -> {len(new_purchases)} new purchases in target sectors")
     
-    # 9. Telegram alerts (solo nuovi sopra soglia)
     alerts_sent = 0
     for np in new_purchases:
         if np["total"] < SOGLIA_TELEGRAM:
@@ -250,11 +239,10 @@ def main():
         if send_telegram(format_alert(np)):
             alerted.add(alert_key)
             alerts_sent += 1
-            time.sleep(0.5)  # rate limit Telegram
+            time.sleep(0.5)
     
-    print(f"  → {alerts_sent} Telegram alerts sent")
+    print(f"  -> {alerts_sent} Telegram alerts sent")
     
-    # 10. Salva stato
     state["sic_cache"] = sic_cache
     state["processed_accessions"] = sorted(processed)
     state["alerted_keys"] = sorted(alerted)
