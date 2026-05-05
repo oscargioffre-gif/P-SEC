@@ -1,7 +1,10 @@
 """
-fetcher.py v3 — Heartbeat sempre aggiornato.
-- last_update viene scritto sempre, anche senza nuovi purchases
-- diagnostic_count: incrementa per ogni run, utile per app per vedere "still alive"
+fetcher.py v4 — Self-healing recovery
+
+Detect+recover quando GitHub Actions cron salta un run.
+- Confronta last_update con cron atteso (varia per orario)
+- Se gap troppo grande, attiva RECOVERY MODE: scarica 200 entries invece di 100
+- Logga il recovery in last_run_stats per visibilità nell'app
 """
 
 import json
@@ -20,6 +23,49 @@ DATA_FILE = Path("data.json")
 RETENTION_HOURS = 28
 SOGLIA_TELEGRAM = float(os.environ.get("SOGLIA_USD", "10000"))
 
+
+# ============================================================
+# CRON SCHEDULE INFERENCE
+# ============================================================
+
+def get_expected_cron_minutes(now_utc):
+    """Ritorna i minuti attesi tra cron in base all'orario corrente."""
+    weekday = now_utc.weekday()  # 0=Mon, 6=Sun
+    hour = now_utc.hour
+    
+    # Weekend: cron ogni ora
+    if weekday in (5, 6):  # Sat, Sun
+        return 60
+    
+    # Weekday US market hours (13-19 UTC = 15:30-21:00 IT con qualche margine)
+    if 13 <= hour <= 19:
+        return 2
+    
+    # Weekday post-close (20-21 UTC = 22:00-00:00 IT)
+    if hour in (20, 21):
+        return 5
+    
+    # Weekday night/morning (resto)
+    return 30
+
+
+def get_cron_label(expected_minutes):
+    """Etichetta human-readable per il cron corrente."""
+    if expected_minutes == 2:
+        return "mercato US (2 min)"
+    elif expected_minutes == 5:
+        return "post-close (5 min)"
+    elif expected_minutes == 30:
+        return "notte/mattina (30 min)"
+    elif expected_minutes == 60:
+        return "weekend (1h)"
+    else:
+        return f"{expected_minutes} min"
+
+
+# ============================================================
+# STATE I/O
+# ============================================================
 
 def load_state():
     if DATA_FILE.exists():
@@ -54,6 +100,10 @@ def save_state(state):
         json.dump(state, f, indent=2, default=str)
 
 
+# ============================================================
+# TELEGRAM
+# ============================================================
+
 def send_telegram(text):
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -72,20 +122,21 @@ def send_telegram(text):
         return False
 
 
-def format_alert(p):
+def format_alert(p, recovery=False):
     cluster_tag = f" ⚡<b>CLUSTER {p['cluster_size']}</b>" if p.get("is_cluster") else ""
+    recovery_tag = " 🔧<i>recovered</i>" if recovery else ""
     
     filing_us_str = ""
     if p.get("filing_datetime_utc"):
         try:
             dt_utc = datetime.fromisoformat(p["filing_datetime_utc"].replace("Z", "+00:00"))
-            dt_et = dt_utc - timedelta(hours=4)  # EDT in maggio
+            dt_et = dt_utc - timedelta(hours=4)
             filing_us_str = f"📅 Filed: {dt_et.strftime('%d %b %H:%M')} ET"
         except (ValueError, AttributeError):
             pass
     
     lines = [
-        f"🔔 <b>{p['ticker']}</b>{cluster_tag} — {p['sector']}",
+        f"🔔 <b>{p['ticker']}</b>{cluster_tag}{recovery_tag} — {p['sector']}",
         f"<i>{(p.get('company') or '')[:60]}</i>",
         "",
         f"👤 {p['insider_name']} ({p.get('insider_title', 'N/D')})",
@@ -99,12 +150,55 @@ def format_alert(p):
     return "\n".join(lines)
 
 
+# ============================================================
+# MAIN
+# ============================================================
+
 def main():
-    print(f"[{datetime.now()}] Fetcher started")
-    state = load_state()
+    now_utc = datetime.now(timezone.utc)
+    print(f"[{now_utc}] Fetcher v4 started")
     
-    # Heartbeat: incrementa run_count
+    state = load_state()
     state["run_count"] = state.get("run_count", 0) + 1
+    
+    # ============================================================
+    # SELF-HEALING DETECTION
+    # ============================================================
+    
+    expected_cron_min = get_expected_cron_minutes(now_utc)
+    cron_label = get_cron_label(expected_cron_min)
+    
+    recovery_mode = False
+    skipped_runs = 0
+    last_update_str = state.get("last_update")
+    
+    if last_update_str:
+        try:
+            last_update_dt = datetime.fromisoformat(last_update_str.replace("Z", "+00:00"))
+            if last_update_dt.tzinfo is None:
+                last_update_dt = last_update_dt.replace(tzinfo=timezone.utc)
+            
+            gap_minutes = (now_utc - last_update_dt).total_seconds() / 60
+            
+            # Soglia recovery: 2.5x il cron atteso (margin per skip occasionali)
+            recovery_threshold = expected_cron_min * 2.5
+            
+            if gap_minutes > recovery_threshold:
+                recovery_mode = True
+                skipped_runs = max(1, int(gap_minutes / expected_cron_min) - 1)
+                print(f"⚠️  RECOVERY MODE: gap={gap_minutes:.1f}min > threshold={recovery_threshold:.1f}min")
+                print(f"   Estimated skipped runs: {skipped_runs}")
+                print(f"   Cron label: {cron_label}")
+            else:
+                print(f"OK: gap={gap_minutes:.1f}min, threshold={recovery_threshold:.1f}min ({cron_label})")
+        except (ValueError, AttributeError) as e:
+            print(f"Could not parse last_update: {e}")
+    else:
+        print("First run, no last_update reference")
+    
+    # ============================================================
+    # SCAN
+    # ============================================================
     
     sic_cache = state["sic_cache"]
     processed = set(state["processed_accessions"])
@@ -112,8 +206,10 @@ def main():
     
     session = edgar.make_session()
     
-    print("Fetching ATOM feed...")
-    feed = edgar.fetch_atom_feed(session, count=100)
+    # Adatta count: 200 in recovery, 100 normale
+    feed_count_param = 200 if recovery_mode else 100
+    print(f"Fetching ATOM feed (count={feed_count_param})...")
+    feed = edgar.fetch_atom_feed(session, count=feed_count_param)
     feed_count = len(feed)
     print(f"  -> {feed_count} entries")
     
@@ -148,7 +244,9 @@ def main():
                         return None
                     return {"filing": filing, "parsed": parsed, "doc_url": doc["url"]}
                 
-                parse_results = edgar.parallel_map(parse_task, candidates, max_workers=4)
+                # In recovery mode usa più workers (più velocità su backlog)
+                max_workers = 6 if recovery_mode else 4
+                parse_results = edgar.parallel_map(parse_task, candidates, max_workers=max_workers)
                 valid_results = [r for r in parse_results if r is not None]
                 valid_count = len(valid_results)
                 print(f"  -> {valid_count} with P+A purchases")
@@ -196,13 +294,14 @@ def main():
                                 "sic": sic,
                                 "xml_url": r["doc_url"],
                                 "parser_strategy": r["parsed"]["strategy"],
-                                "detected_at": datetime.now(timezone.utc).isoformat(),
+                                "detected_at": now_utc.isoformat(),
+                                "from_recovery": recovery_mode,  # NUOVO: flag recovery
                             })
                     
                     new_purchases_count = len(new_purchases)
                     
-                    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-                    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+                    today = now_utc.strftime("%Y-%m-%d")
+                    yesterday = (now_utc - timedelta(days=1)).strftime("%Y-%m-%d")
                     recent_all = [p for p in state["purchases"] if p.get("tx_date") in (today, yesterday)] + new_purchases
                     edgar.detect_clusters(recent_all, min_insiders=3)
                     
@@ -234,22 +333,30 @@ def main():
                         alert_key = f"{np['accession']}|{np['insider_name']}|{np['tx_date']}|{int(np['shares'])}|{np['price']:.4f}"
                         if alert_key in alerted:
                             continue
-                        if send_telegram(format_alert(np)):
+                        if send_telegram(format_alert(np, recovery=recovery_mode)):
                             alerted.add(alert_key)
                             alerts_sent += 1
                             time.sleep(0.5)
                     
                     print(f"  -> {alerts_sent} Telegram alerts sent")
     
-    # Heartbeat stats SEMPRE aggiornati
+    # ============================================================
+    # HEARTBEAT STATS (sempre aggiornato)
+    # ============================================================
+    
     state["last_run_stats"] = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": now_utc.isoformat(),
         "feed_count": feed_count,
         "new_filings": new_filings_count,
         "candidates": candidates_count,
         "valid_with_purchases": valid_count,
         "new_purchases_in_target": new_purchases_count,
         "telegram_alerts_sent": alerts_sent,
+        "recovery_mode": recovery_mode,
+        "skipped_runs_estimate": skipped_runs,
+        "cron_label": cron_label,
+        "expected_cron_minutes": expected_cron_min,
+        "feed_count_param": feed_count_param,
     }
     
     state["sic_cache"] = sic_cache
@@ -257,7 +364,8 @@ def main():
     state["alerted_keys"] = sorted(alerted)
     save_state(state)
     
-    print(f"[{datetime.now()}] Fetcher complete. Run #{state['run_count']}. Storage: {len(state['purchases'])} purchases")
+    mode_str = "🔧 RECOVERY" if recovery_mode else "✅ normal"
+    print(f"[{datetime.now()}] Fetcher complete. Run #{state['run_count']} ({mode_str}). Storage: {len(state['purchases'])} purchases")
     return 0
 
 
