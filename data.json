@@ -278,5 +278,15 @@
     "0002130045-26-000009"
   ],
   "alerted_keys": [],
-  "last_update": "2026-05-05T03:33:21.697715+00:00"
+  "last_update": "2026-05-05T05:00:07.407629+00:00",
+  "run_count": 1,
+  "last_run_stats": {
+    "timestamp": "2026-05-05T05:00:07.407570+00:00",
+    "feed_count": 100,
+    "new_filings": 0,
+    "candidates": 0,
+    "valid_with_purchases": 0,
+    "new_purchases_in_target": 0,
+    "telegram_alerts_sent": 0
+  }
 }
