@@ -1,7 +1,8 @@
 """
-OS Insider Scanner — Viewer Streamlit (v5.2)
-Aggiunge heartbeat panel con stats ultimo run.
-Permette di distinguere "fetcher fermo" da "fetcher OK ma 0 purchases".
+OS Insider Scanner — Viewer Streamlit (v5.3)
+- Threshold realistiche: tollera ritardi GitHub cron (fino a 45 min normale)
+- Mostra "prossimo run previsto" basato su ora corrente
+- Diagnostica espandibile dettagliata
 """
 
 import json
@@ -92,6 +93,48 @@ def fmt_age(utc_dt):
     return f"{days}d"
 
 
+def get_current_cron_interval():
+    """
+    Determina l'intervallo cron atteso in base all'ora UTC corrente.
+    Ritorna (interval_min, label_it).
+    """
+    now = datetime.now(timezone.utc)
+    hour_utc = now.hour
+    weekday = now.weekday()  # 0=Mon, 6=Sun
+    
+    if weekday >= 5:  # Sabato/Domenica
+        return 60, "weekend (1h)"
+    
+    # Weekday
+    if 13 <= hour_utc <= 19:  # 15-22 IT, mercato US aperto
+        return 2, "mercato US (2 min)"
+    elif 20 <= hour_utc <= 21:  # 22-00 IT, post-close
+        return 5, "post-close (5 min)"
+    else:  # 00-15:30 IT, notte/mattina
+        return 30, "notte/mattina (30 min)"
+
+
+def threshold_status(age_min, interval_min):
+    """
+    Calcola stato e messaggio in base al ritardo vs intervallo atteso.
+    GitHub cron può ritardare ~15 min, quindi tolleriamo: interval + 15 + buffer.
+    """
+    # Tolleranze
+    fresh_max = max(interval_min + 5, 7)         # fresh = entro intervallo + 5 min
+    ok_max = interval_min + 20                    # OK = entro intervallo + 20 min (tipico ritardo GitHub)
+    delayed_max = interval_min * 3 + 15            # delayed = fino a 3x intervallo + 15
+    # oltre delayed_max = stuck/error
+    
+    if age_min < fresh_max:
+        return "fresh", f"✅ Fetcher fresco · ultimo run {age_min:.0f} min fa"
+    elif age_min < ok_max:
+        return "ok", f"✅ Fetcher OK · ultimo run {int(age_min)} min fa (cron ogni {interval_min} min)"
+    elif age_min < delayed_max:
+        return "delayed", f"⏱ Ritardo lieve · ultimo run {int(age_min)} min fa (atteso ogni {interval_min} min)"
+    else:
+        return "stuck", f"🚨 Possibile problema · {int(age_min)} min senza run (atteso {interval_min} min)"
+
+
 @st.cache_data(ttl=60)
 def load_data():
     if not DATA_FILE.exists():
@@ -102,6 +145,10 @@ def load_data():
     except (json.JSONDecodeError, ValueError):
         return None
 
+
+# ============================================================
+# UI
+# ============================================================
 
 st.title("📊 OS Insider Scanner")
 st.caption("Form 4 P+A · Biotech + Semiconductors · GitHub Actions cron")
@@ -127,10 +174,12 @@ with st.sidebar:
     st.caption("**Semiconductors**: 3674, 3670, 3571, 3572, 3576, 3577")
     
     st.divider()
-    st.subheader("🕐 Fusi orari")
-    st.caption("• **US ET**: ora del mercato US")
-    st.caption("• **IT**: ora italiana (CEST)")
-    st.caption("• **Età**: tempo dal filing")
+    st.subheader("🕐 Cron schedule")
+    st.caption("• 🔔 **15:30-22:00 IT**: ogni 2 min (mercato US)")
+    st.caption("• 🌙 **22:00-00:00 IT**: ogni 5 min (post-close)")
+    st.caption("• 💤 **00:00-15:30 IT**: ogni 30 min (notte)")
+    st.caption("• 📅 **Weekend**: ogni 1 ora")
+    st.caption("⚠️ GitHub cron può ritardare ~15 min")
     
     st.divider()
     if st.button("🔄 Reload data.json", use_container_width=True):
@@ -147,6 +196,32 @@ purchases = data.get("purchases", [])
 last_update = data.get("last_update")
 last_run_stats = data.get("last_run_stats", {})
 run_count = data.get("run_count", 0)
+
+
+# ============================================================
+# HEARTBEAT BANNER (con threshold realistiche)
+# ============================================================
+
+interval_min, interval_label = get_current_cron_interval()
+
+if last_update:
+    lu = parse_utc_timestamp(last_update)
+    if lu:
+        age_min = (datetime.now(timezone.utc) - lu).total_seconds() / 60
+        feed_count = last_run_stats.get("feed_count", 0)
+        new_purchases_in_run = last_run_stats.get("new_purchases_in_target", 0)
+        
+        status, msg = threshold_status(age_min, interval_min)
+        full_msg = f"{msg} · ATOM: {feed_count} entries · Cron attuale: {interval_label}"
+        
+        if status == "fresh":
+            st.success(full_msg)
+        elif status == "ok":
+            st.success(full_msg)
+        elif status == "delayed":
+            st.info(full_msg + " · GitHub cron a volte salta")
+        else:  # stuck
+            st.error(full_msg + " · Verifica GitHub Actions")
 
 # Filtro 24h
 cutoff_utc = datetime.now(timezone.utc) - timedelta(hours=24)
@@ -178,46 +253,12 @@ elif sort_mode == "Per ticker":
 else:
     filtered.sort(key=lambda x: -x["total"])
 
-
-# ============================================================
-# HEARTBEAT BANNER
-# ============================================================
-
-if last_update:
-    lu = parse_utc_timestamp(last_update)
-    if lu:
-        age_min = (datetime.now(timezone.utc) - lu).total_seconds() / 60
-        feed_count = last_run_stats.get("feed_count", 0)
-        new_purchases_in_run = last_run_stats.get("new_purchases_in_target", 0)
-        
-        if age_min < 5:
-            st.success(
-                f"✅ Fetcher attivo · Ultimo run {age_min:.0f} min fa "
-                f"(run #{run_count}) · "
-                f"ATOM: {feed_count} entries · Nuovi P+A in settori: {new_purchases_in_run}"
-            )
-        elif age_min < 35:
-            st.info(
-                f"ℹ️ Fetcher OK · Ultimo run {int(age_min)} min fa "
-                f"(cron notturno = 30 min) · ATOM: {feed_count} entries"
-            )
-        elif age_min < 90:
-            st.warning(
-                f"⚠️ Fetcher in ritardo: {int(age_min)} min dall'ultimo run. "
-                f"Verifica GitHub Actions."
-            )
-        else:
-            st.error(
-                f"🚨 Fetcher FERMO da {int(age_min)} min! "
-                f"Vai su GitHub Actions e lancia 'Run workflow' manualmente."
-            )
-
-# Most recent filing (se ci sono dati)
+# Most recent filing
 if filtered:
     most_recent_dt = filing_sort_key(filtered[0])
     age_str = fmt_age(most_recent_dt)
     st.markdown(
-        f"🔥 **Ultimo filing P+A nei settori target**: `{filtered[0]['ticker']}` — "
+        f"🔥 **Ultimo P+A nei settori target**: `{filtered[0]['ticker']}` — "
         f"{age_str} fa · {fmt_us_et(most_recent_dt)} · {fmt_italy(most_recent_dt)} IT"
     )
 
@@ -249,12 +290,10 @@ st.divider()
 if not filtered:
     st.info("📭 Nessun filing che corrisponde ai filtri attuali.")
     
-    # Diagnostico: spiega perché non ci sono dati
     if len(purchases) == 0:
         st.caption(
-            "💡 Il database è vuoto. Significa che dall'inizio del monitoraggio "
-            "non sono ancora arrivati Form 4 P+A nei settori Biotech/Semi. "
-            "Tipicamente arrivano 2-15 al giorno durante orario mercato US (15:30-22:00 IT)."
+            "💡 Nessun P+A in storage. Il sistema è appena partito o sono ore di basso traffico. "
+            "Tipicamente arrivano 3-15 P+A/giorno in Biotech/Semi durante orario mercato US (15:30-22:00 IT)."
         )
     else:
         st.caption(
@@ -323,14 +362,14 @@ with st.expander("🔍 Diagnostica & stats ultimo run"):
             ts_dt = parse_utc_timestamp(ts)
             if ts_dt:
                 st.write(f"- Timestamp: {fmt_italy(ts_dt)} IT ({fmt_us_et(ts_dt)})")
-        st.write(f"- ATOM feed entries ricevuti: **{last_run_stats.get('feed_count', 0)}**")
-        st.write(f"- Filing nuovi (non già processati): **{last_run_stats.get('new_filings', 0)}**")
+        st.write(f"- ATOM feed entries: **{last_run_stats.get('feed_count', 0)}**")
+        st.write(f"- Filing nuovi: **{last_run_stats.get('new_filings', 0)}**")
         st.write(f"- Candidati post-prefiltro nome: **{last_run_stats.get('candidates', 0)}**")
-        st.write(f"- Form 4 con purchases (P+A) parsati: **{last_run_stats.get('valid_with_purchases', 0)}**")
+        st.write(f"- Form 4 con purchases (P+A): **{last_run_stats.get('valid_with_purchases', 0)}**")
         st.write(f"- Nuovi P+A in settori target: **{last_run_stats.get('new_purchases_in_target', 0)}**")
         st.write(f"- Alert Telegram inviati: **{last_run_stats.get('telegram_alerts_sent', 0)}**")
     else:
-        st.write("Nessuna statistica disponibile (probabilmente fetcher non ancora aggiornato a v3).")
+        st.write("Nessuna statistica disponibile.")
     
     st.divider()
     st.write("**Storage globale:**")
@@ -338,10 +377,11 @@ with st.expander("🔍 Diagnostica & stats ultimo run"):
     st.write(f"- Purchases in storage: **{len(purchases)}**")
     st.write(f"- Accession già processate: **{len(data.get('processed_accessions', []))}**")
     st.write(f"- CIK in cache SIC: **{len(data.get('sic_cache', {}))}**")
-    st.write(f"- Alert Telegram totali inviati: **{len(data.get('alerted_keys', []))}**")
+    st.write(f"- Alert Telegram totali: **{len(data.get('alerted_keys', []))}**")
 
 
 st.divider()
 st.caption(
-    f"💾 v5.2 · Refresh data.json: 60s · Cron: 2 min (mercato US) - 30 min (notte IT)"
+    f"💾 v5.3 · Refresh data.json: 60s · "
+    f"Nota: GitHub cron può ritardare ~15 min in ore di basso traffico"
 )
