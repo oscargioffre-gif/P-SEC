@@ -2892,10 +2892,10 @@
     "0001628280-26-031608|Behrenbruch Christian|2026-04-28|34500|14.4800",
     "0001628280-26-031608|Behrenbruch Christian|2026-04-29|33435|14.8700"
   ],
-  "last_update": "2026-05-09T22:38:19.219497+00:00",
-  "run_count": 80,
+  "last_update": "2026-05-09T23:42:40.787673+00:00",
+  "run_count": 81,
   "last_run_stats": {
-    "timestamp": "2026-05-09T22:38:19.080679+00:00",
+    "timestamp": "2026-05-09T23:42:40.640467+00:00",
     "feed_count": 100,
     "new_filings": 0,
     "candidates": 0,
