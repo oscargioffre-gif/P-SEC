@@ -2892,20 +2892,20 @@
     "0001628280-26-031608|Behrenbruch Christian|2026-04-28|34500|14.4800",
     "0001628280-26-031608|Behrenbruch Christian|2026-04-29|33435|14.8700"
   ],
-  "last_update": "2026-05-10T23:48:06.481375+00:00",
-  "run_count": 97,
+  "last_update": "2026-05-11T04:06:38.940078+00:00",
+  "run_count": 98,
   "last_run_stats": {
-    "timestamp": "2026-05-10T23:48:06.274708+00:00",
+    "timestamp": "2026-05-11T04:06:38.828692+00:00",
     "feed_count": 100,
     "new_filings": 0,
     "candidates": 0,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": false,
-    "skipped_runs_estimate": 0,
-    "cron_label": "weekend (1h)",
-    "expected_cron_minutes": 60,
-    "feed_count_param": 100
+    "recovery_mode": true,
+    "skipped_runs_estimate": 7,
+    "cron_label": "notte/mattina (30 min)",
+    "expected_cron_minutes": 30,
+    "feed_count_param": 200
   }
 }
