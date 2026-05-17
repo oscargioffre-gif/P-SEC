@@ -5137,10 +5137,10 @@
     "0001628280-26-031608|Behrenbruch Christian|2026-04-29|33435|14.8700",
     "0001999371-26-010652|TPG GP A, LLC|2026-05-11|1388889|18.0000"
   ],
-  "last_update": "2026-05-17T02:43:04.729601+00:00",
-  "run_count": 177,
+  "last_update": "2026-05-17T06:19:27.758358+00:00",
+  "run_count": 178,
   "last_run_stats": {
-    "timestamp": "2026-05-17T02:43:04.559504+00:00",
+    "timestamp": "2026-05-17T06:19:27.574158+00:00",
     "feed_count": 100,
     "new_filings": 2,
     "candidates": 0,
@@ -5148,7 +5148,7 @@
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 1,
+    "skipped_runs_estimate": 2,
     "cron_label": "weekend (1h)",
     "expected_cron_minutes": 60,
     "feed_count_param": 200
