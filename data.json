@@ -1,27 +1,6 @@
 {
   "purchases": [
     {
-      "accession": "0001437749-26-017459",
-      "ticker": "BCDA",
-      "company": "BioCardia, Inc.",
-      "insider_name": "Altman Peter",
-      "insider_title": "Director, President and CEO",
-      "tx_date": "2026-05-15",
-      "filing_date": "2026-05-15",
-      "filing_datetime_utc": "2026-05-15T17:46:28-04:00",
-      "shares": 5100.0,
-      "price": 1.02,
-      "total": 5202.0,
-      "sector": "Biotech",
-      "sic": "2836",
-      "xml_url": "https://www.sec.gov/Archives/edgar/data/925741/000143774926017459/rdgdoc.xml",
-      "parser_strategy": "xml",
-      "detected_at": "2026-05-15T22:02:55.485873+00:00",
-      "from_recovery": false,
-      "is_cluster": false,
-      "cluster_size": 0
-    },
-    {
       "accession": "0001104659-26-062883",
       "ticker": "RLYB",
       "company": "Rallybio Corp",
@@ -5158,20 +5137,20 @@
     "0001628280-26-031608|Behrenbruch Christian|2026-04-29|33435|14.8700",
     "0001999371-26-010652|TPG GP A, LLC|2026-05-11|1388889|18.0000"
   ],
-  "last_update": "2026-05-16T23:48:40.243133+00:00",
-  "run_count": 176,
+  "last_update": "2026-05-17T02:43:04.729601+00:00",
+  "run_count": 177,
   "last_run_stats": {
-    "timestamp": "2026-05-16T23:48:40.106538+00:00",
+    "timestamp": "2026-05-17T02:43:04.559504+00:00",
     "feed_count": 100,
     "new_filings": 2,
     "candidates": 0,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": false,
-    "skipped_runs_estimate": 0,
+    "recovery_mode": true,
+    "skipped_runs_estimate": 1,
     "cron_label": "weekend (1h)",
     "expected_cron_minutes": 60,
-    "feed_count_param": 100
+    "feed_count_param": 200
   }
 }
