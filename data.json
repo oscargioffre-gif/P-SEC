@@ -1,27 +1,6 @@
 {
   "purchases": [
     {
-      "accession": "0000897069-26-001186",
-      "ticker": "PCSA",
-      "company": "Processa Pharmaceuticals, Inc.",
-      "insider_name": "Ng George K",
-      "insider_title": "Director, Chief Executive Officer",
-      "tx_date": "2026-05-15",
-      "filing_date": "2026-05-19",
-      "filing_datetime_utc": "2026-05-19T18:06:01-04:00",
-      "shares": 1843.0,
-      "price": 2.97,
-      "total": 5473.71,
-      "sector": "Biotech",
-      "sic": "2834",
-      "xml_url": "https://www.sec.gov/Archives/edgar/data/1533743/000089706926001186/form4.xml",
-      "parser_strategy": "xml",
-      "detected_at": "2026-05-19T22:40:29.786657+00:00",
-      "from_recovery": true,
-      "is_cluster": false,
-      "cluster_size": 0
-    },
-    {
       "accession": "0001683168-26-004145",
       "ticker": "CNSP",
       "company": "CNS Pharmaceuticals, Inc.",
@@ -141,8 +120,6 @@
     "0001693736": "7359"
   },
   "processed_accessions": [
-    "0001193125-26-206033",
-    "0001193125-26-206039",
     "0001193125-26-206212",
     "0001193125-26-206222",
     "0001193125-26-206223",
@@ -1456,6 +1433,8 @@
     "0001213900-26-059675",
     "0001213900-26-059762",
     "0001213900-26-059773",
+    "0001213900-26-059787",
+    "0001213900-26-059790",
     "0001214659-26-005526",
     "0001214659-26-005527",
     "0001214659-26-005528",
@@ -5175,18 +5154,18 @@
     "0001834423-26-000004|Montalbano John S.|2026-05-14|20000|4.7700",
     "0001999371-26-010652|TPG GP A, LLC|2026-05-11|1388889|18.0000"
   ],
-  "last_update": "2026-05-21T01:31:06.288688+00:00",
-  "run_count": 223,
+  "last_update": "2026-05-21T04:19:53.153039+00:00",
+  "run_count": 224,
   "last_run_stats": {
-    "timestamp": "2026-05-21T01:31:01.534429+00:00",
+    "timestamp": "2026-05-21T04:19:51.922140+00:00",
     "feed_count": 100,
-    "new_filings": 100,
-    "candidates": 7,
+    "new_filings": 50,
+    "candidates": 3,
     "valid_with_purchases": 1,
     "new_purchases_in_target": 3,
-    "telegram_alerts_sent": 2,
+    "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 3,
+    "skipped_runs_estimate": 4,
     "cron_label": "notte/mattina (30 min)",
     "expected_cron_minutes": 30,
     "feed_count_param": 200
