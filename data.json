@@ -5078,20 +5078,20 @@
     "0001834423-26-000004|Montalbano John S.|2026-05-14|20000|4.7700",
     "0001999371-26-010652|TPG GP A, LLC|2026-05-11|1388889|18.0000"
   ],
-  "last_update": "2026-05-23T09:00:18.178206+00:00",
-  "run_count": 249,
+  "last_update": "2026-05-23T11:07:39.354726+00:00",
+  "run_count": 250,
   "last_run_stats": {
-    "timestamp": "2026-05-23T09:00:18.028443+00:00",
+    "timestamp": "2026-05-23T11:07:39.194378+00:00",
     "feed_count": 100,
     "new_filings": 32,
     "candidates": 0,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": true,
-    "skipped_runs_estimate": 1,
+    "recovery_mode": false,
+    "skipped_runs_estimate": 0,
     "cron_label": "weekend (1h)",
     "expected_cron_minutes": 60,
-    "feed_count_param": 200
+    "feed_count_param": 100
   }
 }
