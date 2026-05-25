@@ -54,20 +54,20 @@
     "0002120174-26-000007"
   ],
   "alerted_keys": [],
-  "last_update": "2026-05-25T21:03:35.693168+00:00",
-  "run_count": 4,
+  "last_update": "2026-05-25T22:15:20.977202+00:00",
+  "run_count": 5,
   "last_run_stats": {
-    "timestamp": "2026-05-25T21:03:35.503003+00:00",
+    "timestamp": "2026-05-25T22:15:20.811802+00:00",
     "feed_count": 100,
     "new_filings": 0,
     "candidates": 0,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": true,
-    "skipped_runs_estimate": 2,
-    "cron_label": "post-close (5 min)",
-    "expected_cron_minutes": 5,
-    "feed_count_param": 200
+    "recovery_mode": false,
+    "skipped_runs_estimate": 0,
+    "cron_label": "notte/mattina (30 min)",
+    "expected_cron_minutes": 30,
+    "feed_count_param": 100
   }
 }
