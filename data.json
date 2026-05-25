@@ -5078,10 +5078,17 @@
     "0001834423-26-000004|Montalbano John S.|2026-05-14|20000|4.7700",
     "0001999371-26-010652|TPG GP A, LLC|2026-05-11|1388889|18.0000"
   ],
+<<<<<<< Updated upstream
   "last_update": "2026-05-25T15:54:44.479627+00:00",
   "run_count": 276,
   "last_run_stats": {
     "timestamp": "2026-05-25T15:54:43.850692+00:00",
+=======
+  "last_update": "2026-05-25T15:54:56.311249+00:00",
+  "run_count": 276,
+  "last_run_stats": {
+    "timestamp": "2026-05-25T15:54:55.982381+00:00",
+>>>>>>> Stashed changes
     "feed_count": 100,
     "new_filings": 32,
     "candidates": 0,
