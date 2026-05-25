@@ -54,20 +54,20 @@
     "0002120174-26-000007"
   ],
   "alerted_keys": [],
-  "last_update": "2026-05-25T17:46:59.317896+00:00",
-  "run_count": 1,
+  "last_update": "2026-05-25T19:09:28.766372+00:00",
+  "run_count": 2,
   "last_run_stats": {
-    "timestamp": "2026-05-25T17:46:58.900075+00:00",
+    "timestamp": "2026-05-25T19:09:28.502662+00:00",
     "feed_count": 100,
-    "new_filings": 100,
-    "candidates": 1,
+    "new_filings": 0,
+    "candidates": 0,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": false,
-    "skipped_runs_estimate": 0,
+    "recovery_mode": true,
+    "skipped_runs_estimate": 40,
     "cron_label": "mercato US (2 min)",
     "expected_cron_minutes": 2,
-    "feed_count_param": 100
+    "feed_count_param": 200
   }
 }
