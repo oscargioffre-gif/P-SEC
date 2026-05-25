@@ -54,10 +54,10 @@
     "0002120174-26-000007"
   ],
   "alerted_keys": [],
-  "last_update": "2026-05-25T20:44:26.986423+00:00",
-  "run_count": 3,
+  "last_update": "2026-05-25T21:03:35.693168+00:00",
+  "run_count": 4,
   "last_run_stats": {
-    "timestamp": "2026-05-25T20:44:26.795748+00:00",
+    "timestamp": "2026-05-25T21:03:35.503003+00:00",
     "feed_count": 100,
     "new_filings": 0,
     "candidates": 0,
@@ -65,7 +65,7 @@
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 17,
+    "skipped_runs_estimate": 2,
     "cron_label": "post-close (5 min)",
     "expected_cron_minutes": 5,
     "feed_count_param": 200
