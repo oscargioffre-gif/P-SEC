@@ -54,10 +54,10 @@
     "0002120174-26-000007"
   ],
   "alerted_keys": [],
-  "last_update": "2026-05-25T22:15:20.977202+00:00",
-  "run_count": 5,
+  "last_update": "2026-05-25T23:01:13.587320+00:00",
+  "run_count": 6,
   "last_run_stats": {
-    "timestamp": "2026-05-25T22:15:20.811802+00:00",
+    "timestamp": "2026-05-25T23:01:13.410884+00:00",
     "feed_count": 100,
     "new_filings": 0,
     "candidates": 0,
