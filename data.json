@@ -1793,10 +1793,10 @@
     "0002137554-26-000006"
   ],
   "alerted_keys": [],
-  "last_update": "2026-05-31T22:58:52.279925+00:00",
-  "run_count": 73,
+  "last_update": "2026-06-01T00:11:10.147331+00:00",
+  "run_count": 74,
   "last_run_stats": {
-    "timestamp": "2026-05-31T22:58:51.551869+00:00",
+    "timestamp": "2026-06-01T00:11:09.945655+00:00",
     "feed_count": 100,
     "new_filings": 0,
     "candidates": 0,
@@ -1805,8 +1805,8 @@
     "telegram_alerts_sent": 0,
     "recovery_mode": false,
     "skipped_runs_estimate": 0,
-    "cron_label": "weekend (1h)",
-    "expected_cron_minutes": 60,
+    "cron_label": "notte/mattina (30 min)",
+    "expected_cron_minutes": 30,
     "feed_count_param": 100
   }
 }
