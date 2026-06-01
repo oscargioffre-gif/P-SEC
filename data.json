@@ -1793,20 +1793,20 @@
     "0002137554-26-000006"
   ],
   "alerted_keys": [],
-  "last_update": "2026-06-01T00:11:10.147331+00:00",
-  "run_count": 74,
+  "last_update": "2026-06-01T04:57:27.451755+00:00",
+  "run_count": 75,
   "last_run_stats": {
-    "timestamp": "2026-06-01T00:11:09.945655+00:00",
+    "timestamp": "2026-06-01T04:57:27.292589+00:00",
     "feed_count": 100,
     "new_filings": 0,
     "candidates": 0,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": false,
-    "skipped_runs_estimate": 0,
+    "recovery_mode": true,
+    "skipped_runs_estimate": 8,
     "cron_label": "notte/mattina (30 min)",
     "expected_cron_minutes": 30,
-    "feed_count_param": 100
+    "feed_count_param": 200
   }
 }
