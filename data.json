@@ -23,7 +23,6 @@
     "0001728328": "2834"
   },
   "processed_accessions": [
-    "0000905148-26-002646",
     "0000905148-26-002647",
     "0000905148-26-002648",
     "0000905148-26-002649",
@@ -4159,6 +4158,7 @@
     "0001839882-26-029156",
     "0001839882-26-029157",
     "0001839882-26-029158",
+    "0001839882-26-029159",
     "0001840244-26-000012",
     "0001842522-26-000002",
     "0001843139-26-000003",
@@ -5050,20 +5050,20 @@
     "0001493152-26-027986|LEDERMAN SETH|2026-06-09|5000|11.7900",
     "0001610717-26-000179|SMITH SCOTT THOMAS|2026-06-02|100|219.0000"
   ],
-  "last_update": "2026-06-12T16:23:19.684814+00:00",
-  "run_count": 184,
+  "last_update": "2026-06-12T16:23:45.102871+00:00",
+  "run_count": 185,
   "last_run_stats": {
-    "timestamp": "2026-06-12T16:23:19.176449+00:00",
+    "timestamp": "2026-06-12T16:23:44.826585+00:00",
     "feed_count": 100,
-    "new_filings": 100,
-    "candidates": 1,
+    "new_filings": 4,
+    "candidates": 0,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": true,
-    "skipped_runs_estimate": 109,
+    "recovery_mode": false,
+    "skipped_runs_estimate": 0,
     "cron_label": "mercato US (2 min)",
     "expected_cron_minutes": 2,
-    "feed_count_param": 200
+    "feed_count_param": 100
   }
 }
