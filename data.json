@@ -5050,20 +5050,20 @@
     "0001493152-26-027986|LEDERMAN SETH|2026-06-09|5000|11.7900",
     "0001610717-26-000179|SMITH SCOTT THOMAS|2026-06-02|100|219.0000"
   ],
-  "last_update": "2026-06-13T02:57:09.687342+00:00",
-  "run_count": 192,
+  "last_update": "2026-06-13T06:59:11.347395+00:00",
+  "run_count": 193,
   "last_run_stats": {
-    "timestamp": "2026-06-13T02:57:09.468011+00:00",
+    "timestamp": "2026-06-13T06:59:11.191870+00:00",
     "feed_count": 100,
-    "new_filings": 34,
+    "new_filings": 2,
     "candidates": 0,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": false,
-    "skipped_runs_estimate": 0,
+    "recovery_mode": true,
+    "skipped_runs_estimate": 3,
     "cron_label": "weekend (1h)",
     "expected_cron_minutes": 60,
-    "feed_count_param": 100
+    "feed_count_param": 200
   }
 }
