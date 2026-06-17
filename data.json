@@ -5078,10 +5078,10 @@
     "0001493152-26-028608|Taylor Carolyn E.|2026-06-12|1415|10.5500",
     "0001610717-26-000179|SMITH SCOTT THOMAS|2026-06-02|100|219.0000"
   ],
-  "last_update": "2026-06-17T04:51:15.470585+00:00",
-  "run_count": 226,
+  "last_update": "2026-06-17T09:55:28.158296+00:00",
+  "run_count": 227,
   "last_run_stats": {
-    "timestamp": "2026-06-17T04:51:15.274887+00:00",
+    "timestamp": "2026-06-17T09:55:27.964819+00:00",
     "feed_count": 100,
     "new_filings": 26,
     "candidates": 0,
@@ -5089,7 +5089,7 @@
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 4,
+    "skipped_runs_estimate": 9,
     "cron_label": "notte/mattina (30 min)",
     "expected_cron_minutes": 30,
     "feed_count_param": 200
