@@ -26,7 +26,6 @@
     "0000014177": "2013"
   },
   "processed_accessions": [
-    "0001193125-26-241561",
     "0001193125-26-241563",
     "0001193125-26-241572",
     "0001193125-26-241577",
@@ -3924,6 +3923,7 @@
     "0001839882-26-029989",
     "0001839882-26-029990",
     "0001839882-26-029994",
+    "0001839882-26-029995",
     "0001840244-26-000012",
     "0001842522-26-000002",
     "0001843139-26-000003",
@@ -5056,20 +5056,20 @@
     "0001493152-26-028608|Taylor Carolyn E.|2026-06-12|1415|10.5500",
     "0001610717-26-000179|SMITH SCOTT THOMAS|2026-06-02|100|219.0000"
   ],
-  "last_update": "2026-06-18T16:36:54.500822+00:00",
-  "run_count": 238,
+  "last_update": "2026-06-18T16:37:38.435867+00:00",
+  "run_count": 239,
   "last_run_stats": {
-    "timestamp": "2026-06-18T16:36:53.593187+00:00",
+    "timestamp": "2026-06-18T16:37:38.162300+00:00",
     "feed_count": 100,
-    "new_filings": 100,
-    "candidates": 2,
+    "new_filings": 13,
+    "candidates": 0,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": true,
-    "skipped_runs_estimate": 118,
+    "recovery_mode": false,
+    "skipped_runs_estimate": 0,
     "cron_label": "mercato US (2 min)",
     "expected_cron_minutes": 2,
-    "feed_count_param": 200
+    "feed_count_param": 100
   }
 }
