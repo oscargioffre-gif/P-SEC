@@ -5227,10 +5227,10 @@
     "0001780030-26-000005|STEPHENSON BRIAN C|2026-06-26|580|23.6100",
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600"
   ],
-  "last_update": "2026-07-03T16:47:26.004114+00:00",
-  "run_count": 402,
+  "last_update": "2026-07-03T18:05:19.032752+00:00",
+  "run_count": 403,
   "last_run_stats": {
-    "timestamp": "2026-07-03T16:47:16.568543+00:00",
+    "timestamp": "2026-07-03T18:05:13.604400+00:00",
     "feed_count": 100,
     "new_filings": 63,
     "candidates": 11,
@@ -5238,7 +5238,7 @@
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 45,
+    "skipped_runs_estimate": 37,
     "cron_label": "mercato US (2 min)",
     "expected_cron_minutes": 2,
     "feed_count_param": 200
