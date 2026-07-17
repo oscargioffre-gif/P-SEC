@@ -308,7 +308,6 @@
     "0001213037": "2836"
   },
   "processed_accessions": [
-    "0001712228-26-000002",
     "0001712360-26-000001",
     "0001712371-26-000002",
     "0001712960-26-000004",
@@ -2473,6 +2472,7 @@
     "0001839882-26-035056",
     "0001839882-26-035068",
     "0001839882-26-035070",
+    "0001839882-26-035098",
     "0001840244-26-000012",
     "0001840706-26-000255",
     "0001841752-26-000015",
@@ -5390,18 +5390,18 @@
     "0001780030-26-000005|STEPHENSON BRIAN C|2026-06-26|580|23.6100",
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600"
   ],
-  "last_update": "2026-07-17T08:36:16.798950+00:00",
-  "run_count": 585,
+  "last_update": "2026-07-17T10:52:33.173132+00:00",
+  "run_count": 586,
   "last_run_stats": {
-    "timestamp": "2026-07-17T08:36:13.108728+00:00",
+    "timestamp": "2026-07-17T10:52:29.952326+00:00",
     "feed_count": 100,
-    "new_filings": 80,
-    "candidates": 9,
+    "new_filings": 91,
+    "candidates": 8,
     "valid_with_purchases": 2,
     "new_purchases_in_target": 9,
     "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 4,
+    "skipped_runs_estimate": 3,
     "cron_label": "notte/mattina (30 min)",
     "expected_cron_minutes": 30,
     "feed_count_param": 200
