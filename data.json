@@ -1,27 +1,5 @@
 {
-  "purchases": [
-    {
-      "accession": "0001940272-26-000010",
-      "ticker": "INM",
-      "company": "InMed Pharmaceuticals Inc.",
-      "insider_name": "ADAR1 Capital Management, LLC",
-      "insider_title": "10% Owner",
-      "tx_date": "2026-07-15",
-      "filing_date": "2026-07-17",
-      "filing_datetime_utc": "2026-07-17T19:29:29-04:00",
-      "shares": 1000.0,
-      "price": 1.555,
-      "total": 1555.0,
-      "sector": "Biotech",
-      "sic": "2834",
-      "xml_url": "https://www.sec.gov/Archives/edgar/data/1728328/000194027226000010/primary_doc.xml",
-      "parser_strategy": "xml",
-      "detected_at": "2026-07-17T23:51:45.740583+00:00",
-      "from_recovery": false,
-      "is_cluster": false,
-      "cluster_size": 0
-    }
-  ],
+  "purchases": [],
   "sic_cache": {
     "0001932393": "3844",
     "0001857154": "5400",
@@ -5160,20 +5138,20 @@
     "0001780030-26-000005|STEPHENSON BRIAN C|2026-06-26|580|23.6100",
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600"
   ],
-  "last_update": "2026-07-19T02:13:30.941159+00:00",
-  "run_count": 616,
+  "last_update": "2026-07-19T05:47:13.415793+00:00",
+  "run_count": 617,
   "last_run_stats": {
-    "timestamp": "2026-07-19T02:13:23.323575+00:00",
+    "timestamp": "2026-07-19T05:47:05.796125+00:00",
     "feed_count": 100,
     "new_filings": 90,
     "candidates": 19,
     "valid_with_purchases": 0,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": false,
-    "skipped_runs_estimate": 0,
+    "recovery_mode": true,
+    "skipped_runs_estimate": 2,
     "cron_label": "weekend (1h)",
     "expected_cron_minutes": 60,
-    "feed_count_param": 100
+    "feed_count_param": 200
   }
 }
