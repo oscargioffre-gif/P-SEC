@@ -5389,18 +5389,18 @@
     "0001869579-26-000007|Imran Talat|2026-07-17|35000|0.7198",
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600"
   ],
-  "last_update": "2026-07-22T03:21:49.225011+00:00",
-  "run_count": 659,
+  "last_update": "2026-07-22T06:11:18.830456+00:00",
+  "run_count": 660,
   "last_run_stats": {
-    "timestamp": "2026-07-22T03:21:43.210074+00:00",
+    "timestamp": "2026-07-22T06:11:12.807029+00:00",
     "feed_count": 100,
-    "new_filings": 96,
+    "new_filings": 90,
     "candidates": 15,
     "valid_with_purchases": 1,
     "new_purchases_in_target": 3,
     "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 5,
+    "skipped_runs_estimate": 4,
     "cron_label": "notte/mattina (30 min)",
     "expected_cron_minutes": 30,
     "feed_count_param": 200
