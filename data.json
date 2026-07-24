@@ -294,7 +294,8 @@
     "0001253689": "2834",
     "0001856725": "2834",
     "0001657677": "2834",
-    "0001354866": "3690"
+    "0001354866": "3690",
+    "0002131350": "6770"
   },
   "processed_accessions": [
     "0001839882-26-026001",
@@ -5403,14 +5404,14 @@
     "0001869579-26-000007|Imran Talat|2026-07-17|35000|0.7198",
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600"
   ],
-  "last_update": "2026-07-23T22:55:22.510623+00:00",
-  "run_count": 687,
+  "last_update": "2026-07-24T00:00:07.206807+00:00",
+  "run_count": 688,
   "last_run_stats": {
-    "timestamp": "2026-07-23T22:55:20.324397+00:00",
+    "timestamp": "2026-07-24T00:00:03.915987+00:00",
     "feed_count": 100,
-    "new_filings": 91,
-    "candidates": 5,
-    "valid_with_purchases": 3,
+    "new_filings": 88,
+    "candidates": 8,
+    "valid_with_purchases": 4,
     "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
     "recovery_mode": false,
