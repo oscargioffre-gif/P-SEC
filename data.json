@@ -1,48 +1,5 @@
 {
-  "purchases": [
-    {
-      "accession": "0001493152-26-034654",
-      "ticker": "GDTC",
-      "company": "CytoMed Therapeutics Ltd",
-      "insider_name": "Choo Chee Kong",
-      "insider_title": "Director, 10% Owner",
-      "tx_date": "2026-07-14",
-      "filing_date": "2026-07-24",
-      "filing_datetime_utc": "2026-07-24T21:01:08-04:00",
-      "shares": 100000.0,
-      "price": 1.5,
-      "total": 150000.0,
-      "sector": "Biotech",
-      "sic": "2834",
-      "xml_url": "https://www.sec.gov/Archives/edgar/data/1873093/000149315226034654/ownership.xml",
-      "parser_strategy": "xml",
-      "detected_at": "2026-07-25T01:02:11.856382+00:00",
-      "from_recovery": false,
-      "is_cluster": false,
-      "cluster_size": 0
-    },
-    {
-      "accession": "0001493152-26-034654",
-      "ticker": "GDTC",
-      "company": "CytoMed Therapeutics Ltd",
-      "insider_name": "Choo Chee Kong",
-      "insider_title": "Director, 10% Owner",
-      "tx_date": "2026-07-20",
-      "filing_date": "2026-07-24",
-      "filing_datetime_utc": "2026-07-24T21:01:08-04:00",
-      "shares": 100000.0,
-      "price": 1.5,
-      "total": 150000.0,
-      "sector": "Biotech",
-      "sic": "2834",
-      "xml_url": "https://www.sec.gov/Archives/edgar/data/1873093/000149315226034654/ownership.xml",
-      "parser_strategy": "xml",
-      "detected_at": "2026-07-25T01:02:11.856382+00:00",
-      "from_recovery": false,
-      "is_cluster": false,
-      "cluster_size": 0
-    }
-  ],
+  "purchases": [],
   "sic_cache": {
     "0001932393": "3844",
     "0001857154": "5400",
@@ -5222,10 +5179,10 @@
     "0001869579-26-000007|Imran Talat|2026-07-17|35000|0.7198",
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600"
   ],
-  "last_update": "2026-07-26T02:33:41.140363+00:00",
-  "run_count": 718,
+  "last_update": "2026-07-26T05:56:24.947571+00:00",
+  "run_count": 719,
   "last_run_stats": {
-    "timestamp": "2026-07-26T02:33:38.726029+00:00",
+    "timestamp": "2026-07-26T05:56:22.389762+00:00",
     "feed_count": 100,
     "new_filings": 93,
     "candidates": 6,
@@ -5233,7 +5190,7 @@
     "new_purchases_in_target": 2,
     "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 1,
+    "skipped_runs_estimate": 2,
     "cron_label": "weekend (1h)",
     "expected_cron_minutes": 60,
     "feed_count_param": 200
