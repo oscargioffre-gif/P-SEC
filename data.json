@@ -1,27 +1,6 @@
 {
   "purchases": [
     {
-      "accession": "0001231919-26-000808",
-      "ticker": "ARTV",
-      "company": "Artiva Biotherapeutics, Inc.",
-      "insider_name": "RA CAPITAL MANAGEMENT, L.P.",
-      "insider_title": "Director, 10% Owner",
-      "tx_date": "2026-07-24",
-      "filing_date": "2026-07-28",
-      "filing_datetime_utc": "2026-07-28T17:24:04-04:00",
-      "shares": 41319.0,
-      "price": 9.99,
-      "total": 412776.81,
-      "sector": "Biotech",
-      "sic": "2836",
-      "xml_url": "https://www.sec.gov/Archives/edgar/data/1315082/000123191926000808/form4-07282026_090756.xml",
-      "parser_strategy": "xml",
-      "detected_at": "2026-07-28T22:13:49.014088+00:00",
-      "from_recovery": false,
-      "is_cluster": false,
-      "cluster_size": 0
-    },
-    {
       "accession": "0000902664-26-003270",
       "ticker": "SCTX",
       "company": "Scribe Therapeutics, Inc.",
@@ -209,6 +188,27 @@
       "from_recovery": false,
       "is_cluster": true,
       "cluster_size": 3
+    },
+    {
+      "accession": "0001437749-26-024925",
+      "ticker": "BCDA",
+      "company": "BioCardia, Inc.",
+      "insider_name": "Altman Peter",
+      "insider_title": "Director, President and CEO",
+      "tx_date": "2026-07-29",
+      "filing_date": "2026-07-29",
+      "filing_datetime_utc": "2026-07-29T21:05:07-04:00",
+      "shares": 5000.0,
+      "price": 0.78,
+      "total": 3900.0,
+      "sector": "Biotech",
+      "sic": "2836",
+      "xml_url": "https://www.sec.gov/Archives/edgar/data/925741/000143774926024925/rdgdoc.xml",
+      "parser_strategy": "xml",
+      "detected_at": "2026-07-30T02:50:12.321054+00:00",
+      "from_recovery": true,
+      "is_cluster": false,
+      "cluster_size": 0
     }
   ],
   "sic_cache": {
@@ -283,11 +283,6 @@
     "0001770069": "2834"
   },
   "processed_accessions": [
-    "0001839882-26-031914",
-    "0001839882-26-031961",
-    "0001839882-26-031962",
-    "0001839882-26-031972",
-    "0001839882-26-031976",
     "0001839882-26-031984",
     "0001839882-26-031985",
     "0001839882-26-031992",
@@ -1485,6 +1480,7 @@
     "0001857038-26-000002",
     "0001857843-26-000015",
     "0001857843-26-000016",
+    "0001857843-26-000021",
     "0001857896-26-000004",
     "0001858760-26-000008",
     "0001859383-26-000002",
@@ -4639,7 +4635,9 @@
     "0002009989-26-000019",
     "0002010019-26-000014",
     "0002010019-26-000016",
+    "0002010019-26-000021",
     "0002010135-26-000011",
+    "0002010135-26-000016",
     "0002010300-26-000017",
     "0002010300-26-000021",
     "0002010300-26-000023",
@@ -4894,6 +4892,8 @@
     "0002062725-26-000016",
     "0002062781-26-000010",
     "0002062781-26-000014",
+    "0002062781-26-000018",
+    "0002063236-26-000012",
     "0002063957-26-000005",
     "0002064832-26-000232",
     "0002064832-26-000234",
@@ -5410,20 +5410,20 @@
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600",
     "0002127908-26-000004|Parrot David|2026-07-23|1333|15.0000"
   ],
-  "last_update": "2026-07-30T00:05:34.346202+00:00",
-  "run_count": 771,
+  "last_update": "2026-07-30T02:50:17.539363+00:00",
+  "run_count": 772,
   "last_run_stats": {
-    "timestamp": "2026-07-30T00:05:25.300765+00:00",
+    "timestamp": "2026-07-30T02:50:12.321054+00:00",
     "feed_count": 100,
-    "new_filings": 100,
-    "candidates": 20,
-    "valid_with_purchases": 7,
-    "new_purchases_in_target": 7,
-    "telegram_alerts_sent": 1,
-    "recovery_mode": false,
-    "skipped_runs_estimate": 0,
+    "new_filings": 94,
+    "candidates": 13,
+    "valid_with_purchases": 1,
+    "new_purchases_in_target": 1,
+    "telegram_alerts_sent": 0,
+    "recovery_mode": true,
+    "skipped_runs_estimate": 4,
     "cron_label": "notte/mattina (30 min)",
     "expected_cron_minutes": 30,
-    "feed_count_param": 100
+    "feed_count_param": 200
   }
 }
