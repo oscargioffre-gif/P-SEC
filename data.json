@@ -1,27 +1,6 @@
 {
   "purchases": [
     {
-      "accession": "0001649989-26-000008",
-      "ticker": "OTLK",
-      "company": "Outlook Therapeutics, Inc.",
-      "insider_name": "Sukhtian Faisal Ghiath",
-      "insider_title": "Director",
-      "tx_date": "2026-07-29",
-      "filing_date": "2026-07-29",
-      "filing_datetime_utc": "2026-07-29T15:19:37-04:00",
-      "shares": 95398.0,
-      "price": 1.0482,
-      "total": 99996.1836,
-      "sector": "Biotech",
-      "sic": "2836",
-      "xml_url": "https://www.sec.gov/Archives/edgar/data/1649989/000164998926000008/primary_doc.xml",
-      "parser_strategy": "xml",
-      "detected_at": "2026-07-29T19:25:09.705933+00:00",
-      "from_recovery": true,
-      "is_cluster": false,
-      "cluster_size": 0
-    },
-    {
       "accession": "0000947871-26-000734",
       "ticker": "SCTX",
       "company": "Scribe Therapeutics, Inc.",
@@ -367,8 +346,6 @@
     "0001770069": "2834"
   },
   "processed_accessions": [
-    "0001839882-26-033829",
-    "0001839882-26-033830",
     "0001839882-26-033831",
     "0001839882-26-033832",
     "0001839882-26-033833",
@@ -4124,6 +4101,7 @@
     "0001950027-26-000036",
     "0001950027-26-000038",
     "0001950787-26-000006",
+    "0001950787-26-000009",
     "0001951059-26-000010",
     "0001951059-26-000013",
     "0001951079-26-000004",
@@ -5355,6 +5333,7 @@
     "0002142208-26-000015",
     "0002142313-26-000003",
     "0002142434-26-000002",
+    "0002142653-26-000004",
     "0002143589-26-000002",
     "0002143744-26-000003",
     "0002143887-26-000005",
@@ -5500,20 +5479,20 @@
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600",
     "0002127908-26-000004|Parrot David|2026-07-23|1333|15.0000"
   ],
-  "last_update": "2026-07-30T23:06:31.884436+00:00",
-  "run_count": 785,
+  "last_update": "2026-07-31T01:04:16.067573+00:00",
+  "run_count": 786,
   "last_run_stats": {
-    "timestamp": "2026-07-30T23:06:24.461886+00:00",
+    "timestamp": "2026-07-31T01:04:14.813152+00:00",
     "feed_count": 100,
-    "new_filings": 90,
-    "candidates": 10,
-    "valid_with_purchases": 1,
-    "new_purchases_in_target": 4,
-    "telegram_alerts_sent": 4,
-    "recovery_mode": false,
-    "skipped_runs_estimate": 0,
+    "new_filings": 100,
+    "candidates": 3,
+    "valid_with_purchases": 0,
+    "new_purchases_in_target": 0,
+    "telegram_alerts_sent": 0,
+    "recovery_mode": true,
+    "skipped_runs_estimate": 2,
     "cron_label": "notte/mattina (30 min)",
     "expected_cron_minutes": 30,
-    "feed_count_param": 100
+    "feed_count_param": 200
   }
 }
