@@ -62,6 +62,27 @@
       "from_recovery": true,
       "is_cluster": false,
       "cluster_size": 0
+    },
+    {
+      "accession": "0001493152-26-036442",
+      "ticker": "PTIX",
+      "company": "Protagenic Therapeutics, Inc.\\new",
+      "insider_name": "ARMEN GARO H",
+      "insider_title": "Director, EXEC. CHAIR & PRINCIPAL OFF",
+      "tx_date": "2026-08-05",
+      "filing_date": "2026-08-06",
+      "filing_datetime_utc": "2026-08-06T20:29:33-04:00",
+      "shares": 5000.0,
+      "price": 0.2588,
+      "total": 1293.9999999999998,
+      "sector": "Biotech",
+      "sic": "2834",
+      "xml_url": "https://www.sec.gov/Archives/edgar/data/935679/000149315226036442/ownership.xml",
+      "parser_strategy": "xml",
+      "detected_at": "2026-08-07T00:31:05.639025+00:00",
+      "from_recovery": true,
+      "is_cluster": false,
+      "cluster_size": 0
     }
   ],
   "sic_cache": {
@@ -141,9 +162,6 @@
     "0001723069": "2834"
   },
   "processed_accessions": [
-    "0001839882-26-036402",
-    "0001839882-26-036403",
-    "0001839882-26-036405",
     "0001839882-26-036408",
     "0001839882-26-036409",
     "0001839882-26-036410",
@@ -741,6 +759,7 @@
     "0001859442-26-000009",
     "0001859442-26-000010",
     "0001859448-26-000012",
+    "0001859448-26-000013",
     "0001859453-26-000008",
     "0001859690-26-000113",
     "0001859690-26-000119",
@@ -781,6 +800,7 @@
     "0001864346-26-000004",
     "0001864346-26-000007",
     "0001865057-26-000002",
+    "0001865125-26-000004",
     "0001865143-26-000004",
     "0001865418-26-000007",
     "0001865504-26-000008",
@@ -4875,6 +4895,7 @@
     "0002087376-26-000010",
     "0002087387-26-000002",
     "0002088547-26-000008",
+    "0002088880-26-000006",
     "0002089133-26-000004",
     "0002089261-26-000006",
     "0002089263-26-000010",
@@ -5279,20 +5300,20 @@
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600",
     "0002127908-26-000004|Parrot David|2026-07-23|1333|15.0000"
   ],
-  "last_update": "2026-08-06T15:18:20.277022+00:00",
-  "run_count": 871,
+  "last_update": "2026-08-07T00:31:09.409406+00:00",
+  "run_count": 872,
   "last_run_stats": {
-    "timestamp": "2026-08-06T15:18:10.537960+00:00",
+    "timestamp": "2026-08-07T00:31:05.639025+00:00",
     "feed_count": 100,
     "new_filings": 100,
-    "candidates": 6,
-    "valid_with_purchases": 0,
-    "new_purchases_in_target": 0,
+    "candidates": 9,
+    "valid_with_purchases": 1,
+    "new_purchases_in_target": 1,
     "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 24,
-    "cron_label": "mercato US (2 min)",
-    "expected_cron_minutes": 2,
+    "skipped_runs_estimate": 17,
+    "cron_label": "notte/mattina (30 min)",
+    "expected_cron_minutes": 30,
     "feed_count_param": 200
   }
 }
