@@ -141,7 +141,6 @@
     "0001723069": "2834"
   },
   "processed_accessions": [
-    "0001839882-26-036417",
     "0001839882-26-036418",
     "0001839882-26-036425",
     "0001839882-26-036426",
@@ -3635,6 +3634,7 @@
     "0001923843-26-000001",
     "0001924581-26-000005",
     "0001924613-26-000035",
+    "0001924613-26-000037",
     "0001924790-26-000006",
     "0001924898-26-000007",
     "0001924953-26-000005",
@@ -5279,20 +5279,20 @@
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600",
     "0002127908-26-000004|Parrot David|2026-07-23|1333|15.0000"
   ],
-  "last_update": "2026-08-07T10:27:25.298741+00:00",
-  "run_count": 880,
+  "last_update": "2026-08-07T11:24:47.900560+00:00",
+  "run_count": 881,
   "last_run_stats": {
-    "timestamp": "2026-08-07T10:27:19.976732+00:00",
+    "timestamp": "2026-08-07T11:24:43.874130+00:00",
     "feed_count": 100,
-    "new_filings": 91,
-    "candidates": 5,
-    "valid_with_purchases": 1,
-    "new_purchases_in_target": 1,
+    "new_filings": 84,
+    "candidates": 10,
+    "valid_with_purchases": 0,
+    "new_purchases_in_target": 0,
     "telegram_alerts_sent": 0,
-    "recovery_mode": true,
-    "skipped_runs_estimate": 1,
+    "recovery_mode": false,
+    "skipped_runs_estimate": 0,
     "cron_label": "notte/mattina (30 min)",
     "expected_cron_minutes": 30,
-    "feed_count_param": 200
+    "feed_count_param": 100
   }
 }
