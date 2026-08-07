@@ -5260,20 +5260,20 @@
     "0002111813-26-000010|Parikh Anand Kiran|2026-06-22|2806|19.7600",
     "0002127908-26-000004|Parrot David|2026-07-23|1333|15.0000"
   ],
-  "last_update": "2026-08-07T19:59:47.755512+00:00",
-  "run_count": 890,
+  "last_update": "2026-08-07T20:36:49.870522+00:00",
+  "run_count": 891,
   "last_run_stats": {
-    "timestamp": "2026-08-07T19:59:45.822266+00:00",
+    "timestamp": "2026-08-07T20:36:29.636793+00:00",
     "feed_count": 100,
-    "new_filings": 87,
-    "candidates": 1,
-    "valid_with_purchases": 1,
-    "new_purchases_in_target": 1,
-    "telegram_alerts_sent": 1,
+    "new_filings": 82,
+    "candidates": 2,
+    "valid_with_purchases": 0,
+    "new_purchases_in_target": 0,
+    "telegram_alerts_sent": 0,
     "recovery_mode": true,
-    "skipped_runs_estimate": 23,
-    "cron_label": "mercato US (2 min)",
-    "expected_cron_minutes": 2,
+    "skipped_runs_estimate": 6,
+    "cron_label": "post-close (5 min)",
+    "expected_cron_minutes": 5,
     "feed_count_param": 200
   }
 }
